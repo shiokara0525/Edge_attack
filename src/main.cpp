@@ -110,11 +110,13 @@ void setup(){
     if (A == 0){
       A = 1; //スイッチが押されるのを待つ
     }
+
     else if(A == 1){
       if(digitalRead(Tact_Switch) == LOW){
         A = 2; //スイッチから手が離されるのを待つ
       }
     }
+
     else if(A == 2){
       if(digitalRead(Tact_Switch) == HIGH){  //手が離されたらその時点で正面方向決定
         ac.setup();  //正面方向決定(その他姿勢制御関連のセットアップ)
@@ -122,6 +124,7 @@ void setup(){
         A = 10;  //メインプログラムいけるよ
       }
     }
+
   }
 }
 
@@ -131,7 +134,7 @@ void loop(){
   ball.getBallposition();   //ボールの位置取得
   AC_val = ac.getAC_val();  //姿勢制御用の値を入手
   
-  moter(ball.ang,AC_val);  //進みたい方向、姿勢制御用の値をアウトプットしてモーターに渡す
+  moter(ball.ang,AC_val);  //進みたい方向、姿勢制御用の値をモーターに渡す
 }
 
 
@@ -159,7 +162,7 @@ double AC::getAC_val(){  //姿勢制御の値返す関数
   val = kkp * kp + kkd * kd;  //最終的に返す値を計算
 
   if(abs(dir - dir_old) > 350){
-    ac.flag = 1;
+    ac.flag = 1;  //モーターが急に反転してストップするのを防止するフラグ
   }
   
 
