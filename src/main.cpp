@@ -24,8 +24,8 @@ int A = 0;  //スイッチを押したらメインプログラムに移動でき
 /*----------------------------------------------------------ボール------------------------------------------------------------------------*/
 
 
-double Sin[16]; //sinの値(22.5°ずつ)
-double Cos[16]; //cosの値(22.5°ずつ)
+double bSin[16]; //sinの値(22.5°ずつ)
+double bCos[16]; //cosの値(22.5°ずつ)
 
 
 const int ch_num = 1000; //センサーの値取る回数
@@ -91,6 +91,8 @@ void moter(double,double);  //モーター制御関数
 double val = 200;
 int Mang[4] = {45,135,225,315};  //モーターの角度
 double Mval_old [4] = {0,0,0,0};  //1F前のモーターの出力値
+double Cos[4];
+double Sin[4];
 
 
 /*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
@@ -104,6 +106,8 @@ void setup(){
   for(int i = 0; i < 4; i++){
     pinMode(ena[i],OUTPUT);  
     pinMode(pah[i],OUTPUT);
+    Sin[i] = sin(radians(Mang[i]));
+    Cos[i] = cos(radians(Mang[i])); 
   }  //モーターのピンの設定
 
   while(A != 10){
@@ -169,7 +173,7 @@ double AC::getAC_val(){  //姿勢制御の値返す関数
   dir_old = dir;  //前Fの方向を更新
   time_old = nowTime;  //前Fの時間を更新
 
-  return val;  //値返すo
+  return val;  //値返す
 }
 
 
@@ -232,8 +236,8 @@ void Ball::getBallposition(){
   }
 
   for(int i = 0; i < 16; i++){   //値を集計するところ
-    Bfar_x += Bval[i] * Cos[i];  //ボールの距離のx成分を抽出
-    Bfar_y += Bval[i] * Sin[i];  //ボールの距離のy成分を抽出
+    Bfar_x += Bval[i] * bCos[i];  //ボールの距離のx成分を抽出
+    Bfar_y += Bval[i] * bSin[i];  //ボールの距離のy成分を抽出
 
     if(Bval[i] < sen_lowest){
       low_cou++;  //値がsen_lowest以下だったセンサーの数をカウント
@@ -288,11 +292,14 @@ void Ball::setup(){
 void moter(double ang,double ac_val){
   double g = 0;
   double Mval[4] = {0,0,0,0};  //モーターの値×4
+  double goval_y = sin(radians(ang));
+  double goval_x = cos(radians(ang));
+
 
   val -= ac_val;  //いい感じに姿勢制御できるようにモーターの値を調整する
 
   for(int i = 0; i < 4; i++){   
-    Mval[i] = sin(radians((ang - Mang[i]))); //モーターの回転速度を計算(しろくまさんのやつ見てね、行列式使う予定あるよ)
+    Mval[i] = -Sin[i] * goval_x + Cos[i] * goval_y; //モーターの回転速度を計算(sin)
     
     if(abs(Mval[i]) > g){  //絶対値が一番高い値だったら
       g = abs(Mval[i]);  //一番大きい値を代入
