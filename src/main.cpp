@@ -1,24 +1,21 @@
 #include<Arduino.h>
-#include<Wire.h>
-#include<Adafruit_Sensor.h>
-#include<Adafruit_BNO055.h>
-#include<Adafruit_SPIDevice.h>
 
 
 /*--------------------------------------------------------------定数----------------------------------------------------------------------*/
 
-const int ball_sen[16] ={
-  9,10,11,12,13,34,35,36,37,38,39,40,41,6,7,8};
-const int ena[4] = {28,2,0,4};  
+const int ena[4] = {28,2,0,4};
 const int pah[4] = {29,3,1,5};
 const int Tact_Switch = 15;
 
-const double pi = 3.1415926535897932384;  //円周率
+const double pi = 3.14159265358979323846264338;
 
+/*------------------------------------------------------------モーター関係---------------------------------------------------------------*/
 
-/*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
+int Mang[4] = {45,135,225,315};
+void moter(double,double);
 
-int A = 0;  //スイッチを押したらメインプログラムに移動できる変数
+double Sin[4];
+double Cos[4];
 
 /*----------------------------------------------------------ボール------------------------------------------------------------------------*/
 
@@ -98,10 +95,6 @@ double Sin[4];
 
 
 void setup(){
-  Serial.begin(9600);  //シリアルプリントできるよ
-  Wire.begin();  //I2Cできるよ
-  ball.setup();  //ボールとかのセットアップ
-
   for(int i = 0; i < 4; i++){
     pinMode(ena[i],OUTPUT);  
     pinMode(pah[i],OUTPUT);
@@ -113,31 +106,29 @@ void setup(){
     if (A == 0){
       A = 1; //スイッチが押されるのを待つ
     }
-
     else if(A == 1){
       if(digitalRead(Tact_Switch) == LOW){
         A = 2; //スイッチから手が離されるのを待つ
       }
     }
-
     else if(A == 2){
       if(digitalRead(Tact_Switch) == HIGH){  //手が離されたらその時点で正面方向決定
-        ac.setup();  //正面方向決定(その他姿勢制御関連のセットアップ)
         delay(100);
         A = 10;  //メインプログラムいけるよ
       }
     }
-
   }
 }
 
 
 
+
+
 void loop(){
-  ball.getBallposition();   //ボールの位置取得
-  AC_val = ac.getAC_val();  //姿勢制御用の値を入手
-  
-  moter(ball.ang,AC_val);  //進みたい方向、姿勢制御用の値をモーターに渡す
+  double Mgoang = 0;    //進む角度
+  double Mgoval = 255;  //進むスピード
+
+  moter(Mgoang,Mgoval);
 }
 
 
@@ -300,31 +291,22 @@ void moter(double ang,double ac_val){
   for(int i = 0; i < 4; i++){   
     Mval[i] = -Sin[i] * goval_x + Cos[i] * goval_y + ac_val; //モーターの回転速度を計算(sin)
     
-    if(abs(Mval[i]) > g){  //絶対値が一番高い値だったら
-      g = abs(Mval[i]);  //一番大きい値を代入
+    if(abs(Mval[i]) > g){
+      g = abs(Mval[i]);  //一番大きい比の値を取得(これ基準に考える)
     }
   }
-  
-  for(int i = 0; i < 4; i++){
-    Mval[i] = Mval[i] / g * val + ac_val;  //一番大きい値を255で割ってモーターの値を調整
 
-    if(ac.flag == 1){
-      digitalWrite(pah[i],LOW);
-      analogWrite(ena[i],0);
-    }
-    else if(Mval[i] > 0){  //モーターの回転方向が正の時
+  for(int i = 0; i < 4; i++){  //モーターの制御
+    Mval[i] = Mval[i] / g * val;  //一番大きい比の値を基準にスピードを調整
+
+    if(Mval[i] > 0){  //モーターの回転方向が正の時
       digitalWrite(pah[i] , LOW);    //モーターの回転方向を正にする
       analogWrite(ena[i] , Mval[i]);  //モーターの回転速度を設定
-    } 
+    }
     else{  //モーターの回転方向が負の時
       digitalWrite(pah[i] , HIGH);      //モーターの回転方向を負にする
       analogWrite(ena[i] , -Mval[i]);  //モーターの回転速度を設定
     }
-  }
 
-  if(ac.flag == 1){
-    delay(100);
-    Serial.println(ac.flag);
-    ac.flag = 0;
   }
 }
