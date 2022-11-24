@@ -71,8 +71,8 @@ void moter(double ang,double val){
   double Mval[4] = {0,0,0,0};
   double g = 0;  //一番大きい比の値
 
-  double goval_y = sin(radians(ang));
-  double goval_x = cos(radians(ang));
+  double goval_y = sin(radians(ang));  //進むベクトルのy成分を取り出す
+  double goval_x = cos(radians(ang));  //進むベクトルのx成分を取り出す
 
 
   for(int i = 0; i < 4; i++){   
