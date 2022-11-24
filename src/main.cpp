@@ -1,8 +1,13 @@
 #include<Arduino.h>
-
+#include<Wire.h>
+#include<Adafruit_Sensor.h>
+#include<Adafruit_BNO055.h>
+#include<Adafruit_SPIDevice.h>
 
 /*--------------------------------------------------------------定数----------------------------------------------------------------------*/
 
+const int ball_sen[16] ={
+  9,10,11,12,13,34,35,36,37,38,39,40,41,6,7,8};
 const int ena[4] = {28,2,0,4};
 const int pah[4] = {29,3,1,5};
 const int Tact_Switch = 15;
@@ -20,8 +25,7 @@ double Cos[4];
 /*----------------------------------------------------------ボール------------------------------------------------------------------------*/
 
 
-double bSin[16]; //sinの値(22.5°ずつ)
-double bCos[16]; //cosの値(22.5°ずつ)
+
 
 
 const int ch_num = 1000; //センサーの値取る回数
@@ -40,6 +44,9 @@ public:
 private:
   int cou = 0;  //ボールを見た回数(getBallpositionに入った回数をカウントするやつ)
   double low_acc[MAX];  //ボールまでの距離(最新100回分をはかるように、円環バッファを使う)
+  
+  double bSin[16]; //sinの値(22.5°ずつ)
+  double bCos[16]; //cosの値(22.5°ずつ)
 };
 Ball ball;  //実体を生成
 
@@ -84,23 +91,30 @@ double AC_val = 0;  //姿勢制御の値(グローバル変数)
 
 
 void moter(double,double);  //モーター制御関数
-double val = 200;
+double val = 200;  //モーターの出力
+
 int Mang[4] = {45,135,225,315};  //モーターの角度
-double Mval_old [4] = {0,0,0,0};  //1F前のモーターの出力値
-double Cos[4];
-double Sin[4];
+
+double Cos[4];  //モーターの角度ごとのcosの値
+double Sin[4];  //モーターの角度ごとのsinの値
 
 
 /*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
 
 
 void setup(){
+  Serial.begin(9600);  //シリアルプリントできるよ
+  Wire.begin();  //I2Cできるよ
+  ball.setup();
+  
   for(int i = 0; i < 4; i++){
-    pinMode(ena[i],OUTPUT);  
+    pinMode(ena[i],OUTPUT);
     pinMode(pah[i],OUTPUT);
     Sin[i] = sin(radians(Mang[i]));
     Cos[i] = cos(radians(Mang[i])); 
   }  //モーターのピンの設定
+
+  int A = 0;
 
   while(A != 10){
     if (A == 0){
@@ -125,10 +139,10 @@ void setup(){
 
 
 void loop(){
-  double Mgoang = 0;    //進む角度
-  double Mgoval = 255;  //進むスピード
+  ball.getBallposition();
+  AC_val = ac.getAC_val();
 
-  moter(Mgoang,Mgoval);
+  moter(ball.ang,AC_val);  //モーター制御
 }
 
 
@@ -280,16 +294,16 @@ void Ball::setup(){
 
 
 void moter(double ang,double ac_val){
-  double g = 0;
+  double g = 0;  //一番高いモーターの値
   double Mval[4] = {0,0,0,0};  //モーターの値×4
-  double goval_y = sin(radians(ang));
-  double goval_x = cos(radians(ang));
+  double goval_y = sin(radians(ang));  //進みたいベクトルのx成分
+  double goval_x = cos(radians(ang));  //進みたいベクトルのy成分
 
 
-  val -= ac_val;  //いい感じに姿勢制御できるようにモーターの値を調整する
+  val -= ac_val;  //いい感じに姿勢制御できるようにモーターの値を調整する(姿勢制御の値を引く)
 
   for(int i = 0; i < 4; i++){   
-    Mval[i] = -Sin[i] * goval_x + Cos[i] * goval_y + ac_val; //モーターの回転速度を計算(sin)
+    Mval[i] = -Sin[i] * goval_x + Cos[i] * goval_y; //モーターの回転速度を計算(行列式)
     
     if(abs(Mval[i]) > g){
       g = abs(Mval[i]);  //一番大きい比の値を取得(これ基準に考える)
@@ -297,7 +311,7 @@ void moter(double ang,double ac_val){
   }
 
   for(int i = 0; i < 4; i++){  //モーターの制御
-    Mval[i] = Mval[i] / g * val;  //一番大きい比の値を基準にスピードを調整
+    Mval[i] = Mval[i] / g * val + ac_val;  //一番大きい比の値を基準にスピードを調整
 
     if(Mval[i] > 0){  //モーターの回転方向が正の時
       digitalWrite(pah[i] , LOW);    //モーターの回転方向を正にする
