@@ -4,7 +4,6 @@
 #include<Adafruit_BNO055.h>
 #include<Adafruit_SPIDevice.h>
 
-/*--------------------------------------------------------------定数----------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------定数----------------------------------------------------------------------*/
 
@@ -274,8 +273,8 @@ void Ball::print(){
 void Ball::setup(){
   for(int i = 0; i < 16; i++){
     pinMode(ball_sen[i],INPUT);
-    Cos[i] = cos(radians(i * 22.5));
-    Sin[i] = sin(radians(i * 22.5));
+    bCos[i] = cos(radians(i * 22.5));
+    bSin[i] = sin(radians(i * 22.5));
   }
   for(int i = 0; i < 100; i++){
     low_acc[i] = 0;
@@ -299,7 +298,7 @@ void moter(double ang,double ac_val){
   val -= ac_val;  //いい感じに姿勢制御できるようにモーターの値を調整する
 
   for(int i = 0; i < 4; i++){   
-    Mval[i] = -Sin[i] * goval_x + Cos[i] * goval_y; //モーターの回転速度を計算(sin)
+    Mval[i] = -Sin[i] * goval_x + Cos[i] * goval_y + ac_val; //モーターの回転速度を計算(sin)
     
     if(abs(Mval[i]) > g){  //絶対値が一番高い値だったら
       g = abs(Mval[i]);  //一番大きい値を代入
