@@ -108,10 +108,8 @@ void setup(){
   ball.setup();
   
   for(int i = 0; i < 4; i++){
-    pinMode(ena[i],OUTPUT);
+    pinMode(ena[i],OUTPUT);  
     pinMode(pah[i],OUTPUT);
-    Sin[i] = sin(radians(Mang[i]));
-    Cos[i] = cos(radians(Mang[i])); 
   }  //モーターのピンの設定
 
   int A = 0;
@@ -120,6 +118,7 @@ void setup(){
     if (A == 0){
       A = 1; //スイッチが押されるのを待つ
     }
+
     else if(A == 1){
       if(digitalRead(Tact_Switch) == LOW){
         A = 2; //スイッチから手が離されるのを待つ
@@ -127,27 +126,38 @@ void setup(){
     }
     else if(A == 2){
       if(digitalRead(Tact_Switch) == HIGH){  //手が離されたらその時点で正面方向決定
+        ac.setup();  //正面方向決定(その他姿勢制御関連のセットアップ)
         delay(100);
         A = 10;  //メインプログラムいけるよ
       }
     }
+
   }
 }
 
 
 
-
-
 void loop(){
-  ball.getBallposition();
-  AC_val = ac.getAC_val();
-
-  moter(ball.ang,AC_val);  //モーター制御
+  ball.getBallposition();   //ボールの位置取得
+  AC_val = ac.getAC_val();  //姿勢制御用の値を入手
+  
+  moter(ball.ang,AC_val);  //進みたい方向、姿勢制御用の値をモーターに渡す
 }
 
 
 
 
+
+/*------------------------------------------------------------モーターの関数定義-----------------------------------------------------------*/
+
+
+void moter(double ang,double val){
+  double Mval[4] = {0,0,0,0};
+  double g = 0;  //一番大きい比の値
+
+  double goval_y = sin(radians(ang));  //進むベクトルのy成分を取り出す
+  double goval_x = cos(radians(ang));  //進むベクトルのx成分を取り出す
+}
 /*-----------------------------------------------------------姿勢制御用の関数---------------------------------------------------------------*/
 
 
@@ -303,24 +313,33 @@ void moter(double ang,double ac_val){
   val -= ac_val;  //いい感じに姿勢制御できるようにモーターの値を調整する(姿勢制御の値を引く)
 
   for(int i = 0; i < 4; i++){   
-    Mval[i] = -Sin[i] * goval_x + Cos[i] * goval_y; //モーターの回転速度を計算(行列式)
+    Mval[i] = -Sin[i] * goval_x + Cos[i] * goval_y; //モーターの回転速度を計算(sin)
     
-    if(abs(Mval[i]) > g){
-      g = abs(Mval[i]);  //一番大きい比の値を取得(これ基準に考える)
+    if(abs(Mval[i]) > g){  //絶対値が一番高い値だったら
+      g = abs(Mval[i]);  //一番大きい値を代入
     }
   }
+  
+  for(int i = 0; i < 4; i++){
+    Mval[i] = Mval[i] / g * val + ac_val;  //一番大きい値を255で割ってモーターの値を調整
 
-  for(int i = 0; i < 4; i++){  //モーターの制御
-    Mval[i] = Mval[i] / g * val + ac_val;  //一番大きい比の値を基準にスピードを調整
-
-    if(Mval[i] > 0){  //モーターの回転方向が正の時
+    if(ac.flag == 1){
+      digitalWrite(pah[i],LOW);
+      analogWrite(ena[i],0);
+    }
+    else if(Mval[i] > 0){  //モーターの回転方向が正の時
       digitalWrite(pah[i] , LOW);    //モーターの回転方向を正にする
       analogWrite(ena[i] , Mval[i]);  //モーターの回転速度を設定
-    }
+    } 
     else{  //モーターの回転方向が負の時
       digitalWrite(pah[i] , HIGH);      //モーターの回転方向を負にする
       analogWrite(ena[i] , -Mval[i]);  //モーターの回転速度を設定
     }
+  }
 
+  if(ac.flag == 1){
+    delay(100);
+    Serial.println(ac.flag);
+    ac.flag = 0;
   }
 }
