@@ -6,25 +6,26 @@
 
 /*--------------------------------------------------------------定数----------------------------------------------------------------------*/
 
+/*--------------------------------------------------------------定数----------------------------------------------------------------------*/
+
 const int ball_sen[16] ={
-  9,10,11,12,13,34,35,36,37,38,39,40,41,6,7,8};  //ボールセンサーのピン番号
-const int ena[4] = {28,2,0,4};
-const int pah[4] = {29,3,1,5};  
-const int Tact_Switch = 15;  //スイッチのピン番号
+  9,10,11,12,13,34,35,36,37,38,39,40,41,6,7,8};
+const int ena[4] = {28,2,0,4};  
+const int pah[4] = {29,3,1,5};
+const int Tact_Switch = 15;
 
-const double pi = 3.14159265358979323846264338;  //円周率
+const double pi = 3.1415926535897932384;  //円周率
 
-/*------------------------------------------------------------モーター関係---------------------------------------------------------------*/
 
-int Mang[4] = {45,135,225,315};  //モーターのついてる角度
-void moter(double,double);  //モーターの処理関数
+/*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
 
-double Mval_max = 200;  //モーターの最大出力値
-
-double Sin[4];  //行列式用のsin
-double Cos[4];  //行列式用のcos
+int A = 0;  //スイッチを押したらメインプログラムに移動できる変数
 
 /*----------------------------------------------------------ボール------------------------------------------------------------------------*/
+
+
+double Sin[16]; //sinの値(22.5°ずつ)
+double Cos[16]; //cosの値(22.5°ずつ)
 
 
 const int ch_num = 1000; //センサーの値取る回数
@@ -43,9 +44,8 @@ public:
 private:
   int cou = 0;  //ボールを見た回数(getBallpositionに入った回数をカウントするやつ)
   double low_acc[MAX];  //ボールまでの距離(最新100回分をはかるように、円環バッファを使う)
-  
-  double bSin[16]; //sinの値(22.5°ずつ)
-  double bCos[16]; //cosの値(22.5°ずつ)
+  double Sin[16]; //sinの値(22.5°ずつ)
+  double Cos[16]; //cosの値(22.5°ずつ)
 };
 Ball ball;  //実体を生成
 
@@ -86,6 +86,15 @@ double AC_val = 0;  //姿勢制御の値(グローバル変数)
 
 
 
+/*--------------------------------------------------------------モーター制御---------------------------------------------------------------*/
+
+
+void moter(double,double);  //モーター制御関数
+double val_max = 200;
+int Mang[4] = {45,135,225,315};  //モーターの角度
+double mSin[4];
+double mCos[4];
+
 
 /*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
 
@@ -93,22 +102,19 @@ double AC_val = 0;  //姿勢制御の値(グローバル変数)
 void setup(){
   Serial.begin(9600);  //シリアルプリントできるよ
   Wire.begin();  //I2Cできるよ
-  ball.setup();  //ボールのセットアップ
-  
+  ball.setup();  //ボールとかのセットアップ
+
   for(int i = 0; i < 4; i++){
     pinMode(ena[i],OUTPUT);  
     pinMode(pah[i],OUTPUT);
-    Sin[i] = sin(radians(Mang[i]));  //モーター制御用の変数
-    Cos[i] = cos(radians(Mang[i]));  //モーター制御用の変数
+    mSin[i] = sin(radians(Mang[i]));
+    mCos[i] = cos(radians(Mang[i]));
   }  //モーターのピンの設定
-
-  int A = 0;  //スイッチを押したかどうかの判定用の変数
 
   while(A != 10){
     if (A == 0){
       A = 1; //スイッチが押されるのを待つ
     }
-
     else if(A == 1){
       if(digitalRead(Tact_Switch) == LOW){
         A = 2; //スイッチから手が離されるのを待つ
@@ -121,7 +127,6 @@ void setup(){
         A = 10;  //メインプログラムいけるよ
       }
     }
-
   }
 }
 
@@ -131,7 +136,7 @@ void loop(){
   ball.getBallposition();   //ボールの位置取得
   AC_val = ac.getAC_val();  //姿勢制御用の値を入手
   
-  moter(ball.ang,AC_val);  //進みたい方向、姿勢制御用の値をモーターに渡す
+  moter(ball.ang,AC_val);  //進みたい方向、姿勢制御用の値をアウトプットしてモーターに渡す
 }
 
 
@@ -159,7 +164,7 @@ double AC::getAC_val(){  //姿勢制御の値返す関数
   val = kkp * kp + kkd * kd;  //最終的に返す値を計算
 
   if(abs(dir - dir_old) > 350){
-    ac.flag = 1;  //モーターが急に反転してストップするのを防止するフラグ
+    ac.flag = 1;
   }
   
 
@@ -229,8 +234,8 @@ void Ball::getBallposition(){
   }
 
   for(int i = 0; i < 16; i++){   //値を集計するところ
-    Bfar_x += Bval[i] * bCos[i];  //ボールの距離のx成分を抽出
-    Bfar_y += Bval[i] * bSin[i];  //ボールの距離のy成分を抽出
+    Bfar_x += Bval[i] * Cos[i];  //ボールの距離のx成分を抽出
+    Bfar_y += Bval[i] * Sin[i];  //ボールの距離のy成分を抽出
 
     if(Bval[i] < sen_lowest){
       low_cou++;  //値がsen_lowest以下だったセンサーの数をカウント
@@ -267,8 +272,8 @@ void Ball::print(){
 void Ball::setup(){
   for(int i = 0; i < 16; i++){
     pinMode(ball_sen[i],INPUT);
-    bCos[i] = cos(radians(i * 22.5));
-    bSin[i] = sin(radians(i * 22.5));
+    Cos[i] = cos(radians(i * 22.5));
+    Sin[i] = sin(radians(i * 22.5));
   }
   for(int i = 0; i < 100; i++){
     low_acc[i] = 0;
@@ -283,17 +288,16 @@ void Ball::setup(){
 
 
 void moter(double ang,double ac_val){
-  double g = 0;  //一番高いモーターの値
+  double g = 0;
   double Mval[4] = {0,0,0,0};  //モーターの値×4
-  double goval_y = sin(radians(ang));  //進みたいベクトルのx成分
-  double goval_x = cos(radians(ang));  //進みたいベクトルのy成分
-  double val = Mval_max;  //モーターの値の最大値
-  
+  double val = val_max;
+  double mval_x = cos(radians(ang));
+  double mval_y = sin(radians(ang));
 
-  val -= ac_val;  //いい感じに姿勢制御できるようにモーターの値を調整する(姿勢制御の値を引く)
+  val -= ac_val;  //いい感じに姿勢制御できるようにモーターの値を調整する
 
   for(int i = 0; i < 4; i++){   
-    Mval[i] = -Sin[i] * goval_x + Cos[i] * goval_y; //モーターの回転速度を計算(sin)
+    Mval[i] = -mSin[i] * mval_x + mCos[i] * mval_y; //モーターの回転速度を計算(しろくまさんのやつ見てね、行列式使う予定あるよ)
     
     if(abs(Mval[i]) > g){  //絶対値が一番高い値だったら
       g = abs(Mval[i]);  //一番大きい値を代入
