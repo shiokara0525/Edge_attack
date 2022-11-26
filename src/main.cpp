@@ -4,7 +4,6 @@
 #include<Adafruit_BNO055.h>
 #include<Adafruit_SPIDevice.h>
 
-/*--------------------------------------------------------------定数----------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------定数----------------------------------------------------------------------*/
 
@@ -23,9 +22,6 @@ int A = 0;  //スイッチを押したらメインプログラムに移動でき
 
 /*----------------------------------------------------------ボール------------------------------------------------------------------------*/
 
-
-double Sin[16]; //sinの値(22.5°ずつ)
-double Cos[16]; //cosの値(22.5°ずつ)
 
 
 const int ch_num = 1000; //センサーの値取る回数
@@ -66,9 +62,6 @@ public:
   void setup();  //姿勢制御のセットアップ
 
 private:
-  double kkp = 0;  //比例制御の値
-  double kkd = 0;  //積分制御の値
-
   double nowTime = 0;  //関数で見た時の時間
   double time_old = 0; //1F前の時間
 
@@ -77,7 +70,7 @@ private:
 
   double dir = 0;  //現Fの方向
   double dir_old = 0;  //前Fの方向
-  sensors_event_t event;
+  sensors_event_t event;  //ジャイロのいろんな値入れるやつ
   Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 };
 AC ac;
@@ -90,10 +83,10 @@ double AC_val = 0;  //姿勢制御の値(グローバル変数)
 
 
 void moter(double,double);  //モーター制御関数
-double val_max = 200;
+double val_max = 200;  //モーターの最大値
 int Mang[4] = {45,135,225,315};  //モーターの角度
-double mSin[4];
-double mCos[4];
+double mSin[4];  //行列式のsinの値
+double mCos[4];  //行列式のcosの値
 
 
 /*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
@@ -109,7 +102,7 @@ void setup(){
     pinMode(pah[i],OUTPUT);
     mSin[i] = sin(radians(Mang[i]));
     mCos[i] = cos(radians(Mang[i]));
-  }  //モーターのピンの設定
+  }  //モーターのピンと行列式に使う定数の設定
 
   while(A != 10){
     if (A == 0){
@@ -148,8 +141,11 @@ void loop(){
 
 
 double AC::getAC_val(){  //姿勢制御の値返す関数
+  double kkp = 0;  //比例制御の値
+  double kkd = 0;  //積分制御の値
+    
 
-  bno.getEvent(&event);  
+  bno.getEvent(&event);  //方向チェック
   
   dir = event.orientation.x - dir_target;  //現在の方向を取得
   nowTime = millis();  //現在の時間を取得
@@ -164,7 +160,7 @@ double AC::getAC_val(){  //姿勢制御の値返す関数
   val = kkp * kp + kkd * kd;  //最終的に返す値を計算
 
   if(abs(dir - dir_old) > 350){
-    ac.flag = 1;
+    ac.flag = 1;  //モーターが急に反転してストップするのを防止するフラグ
   }
   
 
@@ -177,15 +173,13 @@ double AC::getAC_val(){  //姿勢制御の値返す関数
 
 
 
-void AC::print(){  //現在の角度、正面方向、姿勢制御の値を表示
+void AC::print(){  //現在の角度、正面方向、姿勢制御の最終的な値を表示
   Serial.print(" 角度 : ");
   Serial.print(dir);
   Serial.print(" 正面方向 : ");
   Serial.print(dir_target);
-  Serial.print(" kkp : ");
-  Serial.print(kkp * kp);  
-  Serial.print(" kkd : ");
-  Serial.println(kkd * kd);
+  Serial.print(" 最終的に出たやつ : ");
+  Serial.print(val);
 }
 
 
@@ -210,20 +204,19 @@ void AC::setup(){  //セットアップ
 
 
 
-void Ball::getBallposition(){
-
+void Ball::getBallposition(){  //ボールの位置を極座標系で取得
   double Bfar = 0;  //グローバル変数に戻す前の変数(直接代入するのはは何となく不安)
   double Bang = 0;  //グローバル変数に戻す前の変数
   int Bval[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; //ボールの値
 
   double Bfar_x = 0; //ボールの距離のx成分
   double Bfar_y = 0; //ボールの距離のy成分
-  
-  int low_cou = 0; //一回ボールの値を集計して値がch_num以下だったセンサーの数
+
+  int low_cou = 0;    //一回ボールの値を集計して値がch_num以下だったセンサーの数
   double low_all = 0; //最新100回のボールの値を集計して値がch_num以下だったセンサーの数
 
 
-  for(int ch_cou = 0; ch_cou < ch_num; ch_cou++){  //ch_num回センサーの値を取得
+  for(int ch_cou = 0; ch_cou < ch_num; ch_cou++){   //ch_num回センサーの値を取得
     for(int sen_num = 0; sen_num < 16; sen_num++){  //16個のセンサーの値を取得
 
       if(digitalReadFast(ball_sen[sen_num]) == 0){
@@ -242,15 +235,15 @@ void Ball::getBallposition(){
     }
   }
 
-  low_acc[cou % MAX] = low_cou;
-  cou++;
+  low_acc[cou % MAX] = low_cou;  //最新の値を配列に入れる(リングバッファ使ってる)
+  cou++;  //この関数の呼び出し回数をカウント
 
   for(int i = 0; i < 100; i++){
     low_all += low_acc[i];  //値がsen_lowest以下だったセンサーの数を合計
   }
 
   Bfar = low_all / (cou < 100 ? cou : 100);  //ボールの距離を計算
-  Bang = atan2(Bfar_y,Bfar_x) * 180 / pi;  //ボールの角度を計算(atan2はラジアンで返すので角度に変換)  
+  Bang = atan2(Bfar_y,Bfar_x) * 180 / pi;    //ボールの角度を計算(atan2はラジアンで返すので角度に変換)  
 
   ang = Bang;
   far = Bfar;
@@ -259,7 +252,7 @@ void Ball::getBallposition(){
 
 
 
-void Ball::print(){
+void Ball::print(){  //ボールの位置を表示
   Serial.print(" ボールの距離 : ");
   Serial.print(far);
   Serial.print(" ボールの角度 : ");
@@ -269,14 +262,14 @@ void Ball::print(){
 
 
 
-void Ball::setup(){
+void Ball::setup(){  //ボール関連のセットアップ
   for(int i = 0; i < 16; i++){
     pinMode(ball_sen[i],INPUT);
-    Cos[i] = cos(radians(i * 22.5));
-    Sin[i] = sin(radians(i * 22.5));
+    Cos[i] = cos(radians(i * 22.5));  //cosの22.5度ごとの値を配列に入れる
+    Sin[i] = sin(radians(i * 22.5));  //sinの22.5度ごとの値を配列に入れる
   }
   for(int i = 0; i < 100; i++){
-    low_acc[i] = 0;
+    low_acc[i] = 0;  //配列の中の値を0にする
   }
 }
 
@@ -287,43 +280,42 @@ void Ball::setup(){
 
 
 
-void moter(double ang,double ac_val){
-  double g = 0;
+void moter(double ang,double ac_val){  //モーター制御する関数
+  double g = 0;                //モーターの最終的に出る最終的な値の比の基準になる値
   double Mval[4] = {0,0,0,0};  //モーターの値×4
-  double val = val_max;
-  double mval_x = cos(radians(ang));
-  double mval_y = sin(radians(ang));
+  double val = val_max;        //モーターの値の上限値
+  double mval_x = cos(radians(ang));  //進みたいベクトルのx成分
+  double mval_y = sin(radians(ang));  //進みたいベクトルのy成分
 
-  val -= ac_val;  //いい感じに姿勢制御できるようにモーターの値を調整する
+  val -= ac_val;  //姿勢制御とその他のモーターの値を別に考えるために姿勢制御の値を引いておく
 
   for(int i = 0; i < 4; i++){   
-    Mval[i] = -mSin[i] * mval_x + mCos[i] * mval_y; //モーターの回転速度を計算(しろくまさんのやつ見てね、行列式使う予定あるよ)
+    Mval[i] = -mSin[i] * mval_x + mCos[i] * mval_y; //モーターの回転速度を計算(行列式で管理)
     
     if(abs(Mval[i]) > g){  //絶対値が一番高い値だったら
-      g = abs(Mval[i]);  //一番大きい値を代入
+      g = abs(Mval[i]);    //一番大きい値を代入
     }
   }
   
   for(int i = 0; i < 4; i++){
-    Mval[i] = Mval[i] / g * val + ac_val;  //一番大きい値を255で割ってモーターの値を調整
+    Mval[i] = Mval[i] / g * val + ac_val;  //モーターの値を計算(進みたいベクトルの値と姿勢制御の値を合わせる) 
 
     if(ac.flag == 1){
       digitalWrite(pah[i],LOW);
       analogWrite(ena[i],0);
     }
-    else if(Mval[i] > 0){  //モーターの回転方向が正の時
+    else if(Mval[i] > 0){            //モーターの回転方向が正の時
       digitalWrite(pah[i] , LOW);    //モーターの回転方向を正にする
-      analogWrite(ena[i] , Mval[i]);  //モーターの回転速度を設定
+      analogWrite(ena[i] , Mval[i]); //モーターの回転速度を設定
     } 
     else{  //モーターの回転方向が負の時
-      digitalWrite(pah[i] , HIGH);      //モーターの回転方向を負にする
+      digitalWrite(pah[i] , HIGH);     //モーターの回転方向を負にする
       analogWrite(ena[i] , -Mval[i]);  //モーターの回転速度を設定
     }
   }
 
-  if(ac.flag == 1){
-    delay(100);
-    Serial.println(ac.flag);
-    ac.flag = 0;
+  if(ac.flag == 1){  //姿勢制御のせいでモータードライバがストップしちゃいそうだったら
+    delay(100);   //ちょっと待つ
+    ac.flag = 0;  //姿勢制御のフラグを下ろす
   }
 }
