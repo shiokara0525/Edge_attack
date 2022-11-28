@@ -41,7 +41,7 @@ void AC::print(){  //現在の角度、正面方向、姿勢制御の最終的�
   Serial.print(" 正面方向 : ");
   Serial.print(dir_target);
   Serial.print(" 最終的に出たやつ : ");
-  Serial.print(val);
+  Serial.println(val);
 }
 
 
@@ -50,6 +50,8 @@ void AC::print(){  //現在の角度、正面方向、姿勢制御の最終的�
 void AC::setup(){  //セットアップ
   bno.begin();
   bno.getEvent(&event);  //方向入手
+  delay(1000);
+  bno.getEvent(&event);
 
   if(event.orientation.x > 180){
     event.orientation.x -= 360;  //方向を0~360から-180~180に変換

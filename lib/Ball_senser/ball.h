@@ -1,5 +1,7 @@
-#pragma onse
+#pragma once
 
+
+#include <Arduino.h>
 
 #define MAX 100
 

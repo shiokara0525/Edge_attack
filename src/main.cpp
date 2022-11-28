@@ -74,6 +74,7 @@ void loop(){
   AC_val = ac.getAC_val();  //姿勢制御用の値を入手
   
   moter(ball.ang,AC_val);  //進みたい方向、姿勢制御用の値をアウトプットしてモーターに渡す
+  ac.print();
 }
 
 
