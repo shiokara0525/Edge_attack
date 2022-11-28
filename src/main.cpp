@@ -20,6 +20,7 @@ Ball ball;  //ボールのクラスのオブジェクトを生成
 AC ac;  //姿勢制御のクラスのオブジェクトを生成
 
 double AC_val;  //姿勢制御の最終的な値を入れるグローバル変数
+double goang = 0;
 
 /*--------------------------------------------------------------モーター制御---------------------------------------------------------------*/
 
@@ -70,11 +71,33 @@ void setup(){
 
 
 void loop(){
-  ball.getBallposition();   //ボールの位置取得
-  AC_val = ac.getAC_val();  //姿勢制御用の値を入手
-  
-  moter(ball.ang,AC_val);  //進みたい方向、姿勢制御用の値をアウトプットしてモーターに渡す
-  ac.print();
+  if(A == 10){
+    ball.getBallposition();   //ボールの位置取得
+    AC_val = ac.getAC_val();  //姿勢制御用の値を入手
+
+    A = 20;
+  }
+  else if(A == 20){
+    if(abs(ball.ang) < 15){
+      goang = ball.ang;
+    }
+    else{
+      float ang_defference = ball.far;
+      if(ball.ang > 0){
+        goang = 90 + ang_defference;
+      }
+      else{
+        goang = -90 - ang_defference;
+      }
+    }
+    A = 30;
+  }
+  else if(A == 30){
+    moter(goang,AC_val);
+    ball.print();
+    A = 10;
+  }
+
 }
 
 

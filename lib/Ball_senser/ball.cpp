@@ -49,6 +49,8 @@ void Ball::getBallposition(){  //ボールの位置を極座標系で取得
 
   ang = Bang;
   far = Bfar;
+  far_x = Bfar_x;
+  far_y = Bfar_y;
 }
 
 
@@ -57,6 +59,8 @@ void Ball::getBallposition(){  //ボールの位置を極座標系で取得
 void Ball::print(){  //ボールの位置を表示
   Serial.print(" ボールの距離 : ");
   Serial.print(far);
+  Serial.print(" ボールのx軸上での距離 : ");
+  Serial.print(far_x / 100);
   Serial.print(" ボールの角度 : ");
   Serial.println(ang);
 }
