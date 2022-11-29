@@ -31,6 +31,11 @@ int Mang[4] = {45,135,225,315};  //モーターの角度
 double mSin[4];  //行列式のsinの値
 double mCos[4];  //行列式のcosの値
 
+int A_go = 0;
+int B_go = 0;
+
+int go_flag = 0;
+
 
 /*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
 
@@ -70,31 +75,65 @@ void setup(){
 
 
 
+
 void loop(){
-  if(A == 10){
+  double ang_defference = 200 / ball.far;  //ボールが近くにあるほど角度を急に、遠くにあるほど角度を浅くする
+
+  if(A == 10){  //いろんな値を入手するところ
     ball.getBallposition();   //ボールの位置取得
     AC_val = ac.getAC_val();  //姿勢制御用の値を入手
 
     A = 20;
   }
-  else if(A == 20){
-    if(abs(ball.ang) < 15){
-      goang = ball.ang;
+  else if(A == 20){  //回り込みのアルゴリズムのとこ
+    if(abs(ball.ang) < 30){  //前にボールがあったら
+      A_go = 0;
+      if(A_go != B_go){
+        B_go = A_go;  
+      }
+      goang = ball.ang;  //普通にボール追いかける
+
     }
-    else{
-      float ang_defference = ball.far;
-      if(ball.ang > 0){
-        goang = 90 + ang_defference;
+    else if(abs(ball.ang) > 135){  //後ろにボールがあったら
+      A_go = 10;
+      if(A_go != B_go){  //前Fここに入ってなかったら
+        B_go = A_go;  
+        if(ball.ang < 0){  //ボールが左にあったら
+          go_flag = 0;  //右方向に回り込み
+        }
+        else{  //ボールが右にあったら
+          go_flag = 1;  //左方向に回り込み
+        }
+      }
+      
+      if(go_flag == 0){  //右方向に回り込み
+        goang = abs(ball.ang) + 2 * ang_defference;  //回り込みの角度を急にする(角度の差分を大きくする)
+      }
+      else{  //左方向に回り込み
+        goang = -abs(ball.ang) - 2 * ang_defference;  //回り込みの角度を急にする(角度の差分を大きくする)
+      }
+
+    }
+    else{  //ボールが前とも後ろとも言えない横とかにあったら
+      A_go = 20; 
+      if(A_go != B_go){
+        B_go = A_go;  //値更新する
+      }
+      
+      if(ball.ang < 0){  //ボールが左にあったら
+        goang = ball.ang - ang_defference;
       }
       else{
-        goang = -90 - ang_defference;
+        goang = ball.ang + ang_defference;
       }
+
     }
+
     A = 30;
   }
-  else if(A == 30){
-    moter(goang,AC_val);
-    ball.print();
+  else if(A == 30){  //モーターの処理とか値の表示とか
+    moter(goang,AC_val);  //モーター制御
+
     A = 10;
   }
 
