@@ -36,14 +36,13 @@ double mSin[4];  //行列式のsinの値
 double mCos[4];  //行列式のcosの値
 
 
-int A_go = 0;
-int B_go = 999;
+int A_go = 0;  //どんな動きしてるか
+int B_go = 999;  //前回どんな動きしてたか
 
-int A_line = 0;
-int B_line = 999;
+int A_line = 0;  //ライン踏んでるか踏んでないか
+int B_line = 999;  //前回踏んでるか踏んでないか
 
-int A_line_flag = 0;
-int B_line_flag = 999;
+int line_flag = 0;  //どんな風にラインの判定したか記録
 
 
 
@@ -57,7 +56,7 @@ void setup(){
   Serial.begin(9600);  //シリアルプリントできるよ
   Wire.begin();  //I2Cできるよ
   ball.setup();  //ボールとかのセットアップ
-  line.setup();
+  line.setup();  //ラインとかのセットアップ
 
   for(int i = 0; i < 4; i++){
     pinMode(ena[i],OUTPUT);  
@@ -89,65 +88,174 @@ void setup(){
 
 
 void loop(){
-  double AC_val;  //姿勢制御の最終的な値を入れるグローバル変数
-  double goang = 0;
-  int Line_flag = 0;
-  int go_flag = 0;
+  double AC_val = 0;  //姿勢制御の最終的な値を入れるグローバル変数
+  double goang = 0;  //進みたい角度
+  int go_flag = 0;  //回り込みでは回り込みする方向、ラインではラインを踏んでる方向
+  double ang_defference = 200 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
+  int Line_flag = 0;  //ライン踏んでるか踏んでないか
 
+  if(A == 10){  //情報入手
+    ball.getBallposition();  //ボールの位置取得
+    Line_flag = line.getLINE_Vec();  //ライン踏んでるか踏んでないかを判定
+    AC_val = ac.getAC_val();  //姿勢制御の値入手
 
-  ball.getBallposition();
-  goang = ball.ang;
-  Line_flag = line.getLINE_Vec();
-  AC_val = ac.getAC_val();
-  
-
-  if(Line_flag == 1){
-    A_line = 1;
-    if(A_line != B_line){
-      B_line = A_line;
-      if(70 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 110){
-        if(goang < 0 && line.Lvec_Dir < 0){
-          go_flag = 1;
-          A_line_flag = 1;
-        }
-        else if(goang > 0 && line.Lvec_Dir > 0){
-          go_flag = 2;
-          A_line_flag = 2;
-        }
-      }
-      else if(abs(line.Lvec_Dir) < 20){
-        if(abs(goang) > 90){
-          go_flag = 3;
-          A_line_flag = 3;
-        }
-      }
-      else if(abs(line.Lvec_Dir) > 160){
-        if(abs(goang) > 90){
-          go_flag = 4;
-          A_line_flag = 4;
-        }
-      }
-    }
-    else{
-      go_flag = A_line_flag;
-    }
-  }
-  else if(Line_flag == 0){
-    A_line = 0;
-    if(A_line != B_line){
-      B_line = A_line;
-    }
-    go_flag = 0;
+    A = 20;
   }
 
-  moter(goang,AC_val,go_flag);
+  else if(A == 20){
+    if(abs(ball.ang) < 30){  //前にボールがあったら
+      A_go = 0;
+      if(A_go != B_go){
+        B_go = A_go;  
+      }
+      goang = ball.ang;  //普通にボール追いかける
+    }
+    else if(abs(ball.ang) > 135){  //後ろにボールがあったら
+      A_go = 10;
+      if(A_go != B_go){  //前Fここに入ってなかったら
+        B_go = A_go;  
+        if(ball.ang < 0){  //ボールが左にあったら
+          go_flag = 0;  //右方向に回り込み
+        }
+        else{  //ボールが右にあったら
+          go_flag = 1;  //左方向に回り込み
+        }
+      }
+      
+      if(go_flag == 0){  //右方向に回り込み
+        goang = abs(ball.ang) + 2 * ang_defference;  //回り込みの角度を急にする(角度の差分を大きくする)
+      }
+      else{  //左方向に回り込み
+        goang = -abs(ball.ang) - 2 * ang_defference;  //回り込みの角度を急にする(角度の差分を大きくする)
+      }
 
+    }
+    else{  //ボールが前とも後ろとも言えない横とかにあったら
+      A_go = 20; 
+      if(A_go != B_go){
+        B_go = A_go;  //値更新する
+      }
+      
+      if(ball.ang < 0){  //ボールが左にあったら
+        goang = ball.ang - ang_defference;  //左に回り込み
+      }
+      else{
+        goang = ball.ang + ang_defference;  //右に回り込み
+      }
+    }
 
-  line.print();
-  Serial.print(" ラインのフラグ : ");
-  Serial.print(go_flag);
-  Serial.print(" 進む角度 : ");
-  Serial.print(goang);
+    A = 30;
+  }
+
+  else if(A == 30){  //ライン読むところ
+    if(Line_flag == 1){  //ラインがオンだったら
+      A_line = 1;
+      if(A_line != B_line){  //ラインがオフからオンになってたら
+        B_line = A_line;  //今オン状態
+
+        if(70 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 110){  //70~110,-70~-110の角度でラインを踏んでたら(真横)
+          if(goang < 0 && line.Lvec_Dir < 0){  //進みたい方向が左で、ラインも左で踏んでたら
+            go_flag = 1;  //左にラインあるよ
+            line_flag = 1;
+          }
+          else if(goang > 0 && line.Lvec_Dir > 0){  //進みたい方向が右で、ラインも右で踏んでたら          
+            go_flag = 2;  //右にラインあるよ
+            line_flag = 2;
+          }
+        }
+        else if(abs(line.Lvec_Dir) < 20){  //ライン前で踏んでたら
+          if(abs(goang) > 90){  //前に進もうとしてたら
+            go_flag = 3;  //前にラインあるよ
+            line_flag = 3;
+          }
+        }
+        else if(abs(line.Lvec_Dir) > 160){  //ライン後ろで踏んでたら
+          if(abs(goang) > 90){  //後ろにすすもうとしてたら
+            go_flag = 4;  //後ろにラインあるよ
+            line_flag = 4;
+          }
+        }
+        else if(20 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 70){  //前斜め方向にラインあったら
+          if(line.Lvec_Dir < 0){  //左前斜め方向にラインあったら
+            if(0 < goang && goang < 90){  //前方向に進みたかったら
+              go_flag = 3;  //前にストップ
+              line_flag = 3;
+            }
+            else if(-180 < goang && goang < 90){  //左方向に進みたかったら
+              go_flag = 1;  //左に進みたかったら
+              line_flag = 1;
+            }
+            else{
+              go_flag = 5;  //ストップ
+              line_flag = 5;
+            }
+          }
+          else{  //右前斜め方向にラインあったら
+            if(-90 < goang && goang < 0){  //前方向に行きたかったら
+              go_flag = 3;  //前のストップかける
+              line_flag = 3;
+            }
+            else if(90 < goang && goang < 180){  //右方向に行きたかったら
+              go_flag = 2;  //右のストップかける
+              line_flag = 2;
+            }
+            else{  //右前斜め方向に行きたかったら
+              go_flag = 5;  //ストップ
+              line_flag = 5;
+            }
+          }
+        }
+        else{  //後ろ斜め方向にラインあったら
+          if(line.Lvec_Dir < 0){  //左後ろ斜めにラインあったら
+            if(-90 < goang && goang < 0){  //左方向に行きたかったら
+              go_flag = 1;  //左方向のストップ
+              line_flag = 1;
+            }
+            else if(90 < goang && goang < 180){  //後ろ方向に行きたかったら
+              go_flag = 4;  //後ろ方向のストップかける
+              line_flag = 4;
+            }
+            else if(0 < goang && goang < 90){  //左後ろ斜めに行きたかったら
+              go_flag = 5;  //ストップ
+              line_flag = 5;
+            }
+          }
+          else{  //右後ろ斜めにラインあったら
+            if(0 < goang && goang < 90){  //右方向に行きたかったら
+              go_flag = 2;  //右方向のストップ
+              line_flag = 2;
+            }
+            else if(-180 < goang && goang < -90){  //後ろ方向に行きたかったら
+              go_flag = 4;  //後ろ方向のストップ
+              line_flag = 4;
+            }
+            else if(90 < goang && goang < 180){  //右後ろ斜めに行きたかったら
+              go_flag = 5;  //ストップ
+              line_flag = 5;
+            }
+          }
+        }
+
+      }
+      else{
+        go_flag = line_flag;  //前回から続けてライン踏んでたら前回と同じ判定(慣性に負けちゃってコートに踏みとどまるのが間に合わないから)
+      }
+    }
+    else if(Line_flag == 0){  //ラインを踏んでなかったら
+      A_line = 0;
+      if(A_line != B_line){  //前回までライン踏んでたら
+        B_line = A_line;  //今回はライン踏んでないよ
+      }
+      go_flag = 0;  //ライン踏んでない
+    }
+
+    A = 40;
+  }
+
+  if(A == 40){  //最終的に処理するとこ(モーターとかも)
+    moter(goang,AC_val,go_flag);  //モーターの処理
+    A = 10;
+  }
 }
 
 
@@ -172,17 +280,20 @@ void moter(double ang,double ac_val,int go_flag){  //モーター制御する関
       Mval[i] = -mSin[i] * mval_x + mCos[i] * mval_y; //モーターの回転速度を計算(行列式で管理)
     }
 
-    else if(go_flag == 1){
-      Mval[i] = -mSin[i] * mval_x + mCos[i] * 1; //モーターの回転速度を計算(行列式で管理)
+    else if(go_flag == 1){  //左のストップかかってたら
+      Mval[i] = -mSin[i] * mval_x + mCos[i] * 1; 
     }
-    else if(go_flag == 2){
+    else if(go_flag == 2){  //右のストップかかってたら
       Mval[i] = -mSin[i] * mval_x - mCos[i] * 1;
     }
-    else if(go_flag == 3){
+    else if(go_flag == 3){  //前のストップかかってたら
       Mval[i] = mCos[i] * mval_y - -mSin[i] + 1.5;
     }
-    else if(go_flag == 4){
+    else if(go_flag == 4){  //後ろのストップかかってたら
       Mval[i] = mCos[i] * mval_y + -mSin[i] + 1.5;
+    }
+    else if(go_flag == 5){  //ストップ
+      Mval[i] = 0;
     }
 
     
@@ -192,8 +303,8 @@ void moter(double ang,double ac_val,int go_flag){  //モーター制御する関
 
   }
 
-  if(go_flag != 0){
-    g = 1;
+  if(go_flag != 0){  //ラインから逃げる感じの雰囲気だったら
+    g = 1;  //180°単位の移動方向の変化があるから出力控え目
   }
 
   for(int i = 0; i < 4; i++){
