@@ -6,7 +6,7 @@
 #define pi 3.1415926535897932384
 
 
-void Ball::getBallposition(){  //ボールの位置を極座標系で取得
+int Ball::getBallposition(){  //ボールの位置を極座標系で取得
   double Bfar = 0;  //グローバル変数に戻す前の変数(直接代入するのはは何となく不安)
   double Bang = 0;  //グローバル変数に戻す前の変数
   int Bval[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; //ボールの値
@@ -51,6 +51,12 @@ void Ball::getBallposition(){  //ボールの位置を極座標系で取得
   far = Bfar;
   far_x = Bfar_x;
   far_y = Bfar_y;
+  if(Bfar_x == 0 && Bfar_y == 0){
+    return 0;
+  }
+  else{
+    return 1;
+  }
 }
 
 

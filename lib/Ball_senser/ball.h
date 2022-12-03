@@ -11,7 +11,7 @@ public:
   double ang;  //ボールまでの角度
   double far_x;
   double far_y;
-  void getBallposition();  //ボールの位置を取得
+  int getBallposition();  //ボールの位置を取得
   void print();  //ボールの距離と角度を表示
   void setup();  //セットアップ
 

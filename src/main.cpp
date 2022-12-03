@@ -39,6 +39,8 @@ double mCos[4];  //行列式のcosの値
 int A_go = 0;  //どんな動きしてるか
 int B_go = 999;  //前回どんな動きしてたか
 
+int mawarikomi_flag = 0;
+
 int A_line = 0;  //ライン踏んでるか踏んでないか
 int B_line = 999;  //前回踏んでるか踏んでないか
 
@@ -125,14 +127,14 @@ void loop(){
       if(A_go != B_go){  //前Fここに入ってなかったら
         B_go = A_go;  
         if(ball.ang < 0){  //ボールが左にあったら
-          go_flag = 0;  //右方向に回り込み
+          mawarikomi_flag = 0;  //右方向に回り込み
         }
         else{  //ボールが右にあったら
-          go_flag = 1;  //左方向に回り込み
+          mawarikomi_flag = 1;  //左方向に回り込み
         }
       }
       
-      if(go_flag == 0){  //右方向に回り込み
+      if(mawarikomi_flag == 0){  //右方向に回り込み
         goang = abs(ball.ang) + 2 * ang_defference;  //回り込みの角度を急にする(角度の差分を大きくする)
       }
       else{  //左方向に回り込み
@@ -144,9 +146,15 @@ void loop(){
       A_go = 20; 
       if(A_go != B_go){
         B_go = A_go;  //値更新する
+        if(ball.ang < 0){
+          mawarikomi_flag = 0;
+        }
+        else{
+          mawarikomi_flag = 1;
+        }
       }
       
-      if(ball.ang < 0){  //ボールが左にあったら
+      if(mawarikomi_flag == 0){  //ボールが左にあったら
         goang = ball.ang - ang_defference;  //左に回り込み
       }
       else{
@@ -189,11 +197,13 @@ void loop(){
           if(line.Lvec_Dir < 0){  //左前斜め方向にラインあったら
             if(-180 < goang && goang < 90){
               go_flag = 5;
+              line_flag = 5;
             }
           }
           else{  //右前斜め方向にラインあったら
             if(-90 < goang && goang < 180){
               go_flag = 6;
+              line_flag = 7;
             }
           }
         }
@@ -201,11 +211,13 @@ void loop(){
           if(line.Lvec_Dir < 0){  //左後ろ斜めにラインあったら
             if(goang < 0 || -90 < goang ){
               go_flag = 7;
+              line_flag = 7;
             }
           }
           else{  //右後ろ斜めにラインあったら
             if(goang < -90 || 0 < goang){
               go_flag = 8;
+              line_flag = 8;
             }
           }
         }
@@ -304,6 +316,9 @@ void moter(double ang,double ac_val,int go_flag){  //モーター制御する関
     }
     else if(go_flag == 8){
       Mval[i] = -mSin[i] * 1 + mCos[i] * -1;
+    }
+    else if(go_flag == 9){
+      Mval[i] = 0;
     }
 
     
