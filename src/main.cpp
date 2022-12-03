@@ -160,19 +160,19 @@ void loop(){
   if(A == 30){  //ライン読むところ
     
     if(Line_flag == 1){  //ラインがオンだったら
-    A_line = 1;
-    if(A_line != B_line){
-      B_line = A_line;
-        if(70 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 110){
-          if(goang < 0 && line.Lvec_Dir < 0){
-            go_flag = 1;
-            line_flag = 1;
+      A_line = 1;
+      if(A_line != B_line){
+        B_line = A_line;
+          if(70 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 110){
+            if(goang < 0 && line.Lvec_Dir < 0){
+              go_flag = 1;
+              line_flag = 1;
+            }
+            else if(goang > 0 && line.Lvec_Dir > 0){
+              go_flag = 2;
+              line_flag = 2;
+            }
           }
-          else if(goang > 0 && line.Lvec_Dir > 0){
-            go_flag = 2;
-            line_flag = 2;
-          }
-        }
         else if(abs(line.Lvec_Dir) < 20){
           if(abs(goang) < 90){
             go_flag = 3;
@@ -187,133 +187,58 @@ void loop(){
         }
         else if(20 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 70){  //前斜め方向にラインあったら
           if(line.Lvec_Dir < 0){  //左前斜め方向にラインあったら
-            if(0 < goang && goang < 90){  //前方向に進みたかったら
-              go_flag = 3;  //前にストップ
-              line_flag = 3;
-            }
-            else if(-180 < goang && goang < 90){  //左方向に進みたかったら
-              go_flag = 1;  //左に進みたかったら
-              line_flag = 1;
-            }
-            else{
-              go_flag = 5;  //ストップ
-              line_flag = 5;
+            if(-180 < goang && goang < 90){
+              go_flag = 5;
             }
           }
           else{  //右前斜め方向にラインあったら
-            if(-90 < goang && goang < 0){  //前方向に行きたかったら
-              go_flag = 3;  //前のストップかける
-              line_flag = 3;
-            }
-            else if(90 < goang && goang < 180){  //右方向に行きたかったら
-              go_flag = 2;  //右のストップかける
-              line_flag = 2;
-            }
-            else{  //右前斜め方向に行きたかったら
-              go_flag = 5;  //ストップ
-              line_flag = 6;
+            if(-90 < goang && goang < 180){
+              go_flag = 6;
             }
           }
-
         }
         else if(110 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 160){  //後ろ斜め方向にラインあったら
           if(line.Lvec_Dir < 0){  //左後ろ斜めにラインあったら
-            if(-90 < goang && goang < 0){  //左方向に行きたかったら
-              go_flag = 1;  //左方向のストップ
-              line_flag = 1;
-            }
-            else if(90 < goang && goang < 180){  //後ろ方向に行きたかったら
-              go_flag = 4;  //後ろ方向のストップかける
-              line_flag = 4;
-            }
-            else if(0 < goang && goang < 90){  //左後ろ斜めに行きたかったら
-              go_flag = 5;  //ストップ
-              line_flag = 7;
+            if(goang < 0 || -90 < goang ){
+              go_flag = 7;
             }
           }
           else{  //右後ろ斜めにラインあったら
-            if(0 < goang && goang < 90){  //右方向に行きたかったら
-              go_flag = 2;  //右方向のストップ
-              line_flag = 2;
-            }
-            else if(-180 < goang && goang < -90){  //後ろ方向に行きたかったら
-              go_flag = 4;  //後ろ方向のストップ
-              line_flag = 4;
-            }
-            else if(90 < goang && goang < 180){  //右後ろ斜めに行きたかったら
-              go_flag = 5;  //ストップ
-              line_flag = 8;
+            if(goang < -90 || 0 < goang){
+              go_flag = 8;
             }
           }
         }
-
       }
-      else{
+      else{  //連続でライン踏んでたら
         if(20 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 70){  //前斜め方向にラインあったら
           if(line.Lvec_Dir < 0){  //左前斜め方向にラインあったら
-            if(0 < goang && goang < 90){  //前方向に進みたかったら
-              go_flag = 3;  //前にストップ
-              line_flag = 3;
-            }
-            else if(-180 < goang && goang < 90){  //左方向に進みたかったら
-              go_flag = 1;  //左に進みたかったら
-              line_flag = 1;
-            }
-            else{
-              go_flag = 5;  //ストップ
-              line_flag = 5;
+            if(-180 < goang && goang < 90){
+              go_flag = 5;
             }
           }
           else{  //右前斜め方向にラインあったら
-            if(-90 < goang && goang < 0){  //前方向に行きたかったら
-              go_flag = 3;  //前のストップかける
-              line_flag = 3;
-            }
-            else if(90 < goang && goang < 180){  //右方向に行きたかったら
-              go_flag = 2;  //右のストップかける
-              line_flag = 2;
-            }
-            else{  //右前斜め方向に行きたかったら
-              go_flag = 5;  //ストップ
-              line_flag = 6;
+            if(-90 < goang && goang < 180){
+              go_flag = 6;
             }
           }
         }
         else if(110 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 160){  //後ろ斜め方向にラインあったら
           if(line.Lvec_Dir < 0){  //左後ろ斜めにラインあったら
-            if(-90 < goang && goang < 0){  //左方向に行きたかったら
-              go_flag = 1;  //左方向のストップ
-              line_flag = 1;
-            }
-            else if(90 < goang && goang < 180){  //後ろ方向に行きたかったら
-              go_flag = 4;  //後ろ方向のストップかける
-              line_flag = 4;
-            }
-            else if(0 < goang && goang < 90){  //左後ろ斜めに行きたかったら
-              go_flag = 5;  //ストップ
-              line_flag = 7;
+            if(goang < 0 || -90 < goang ){
+              go_flag = 7;
             }
           }
           else{  //右後ろ斜めにラインあったら
-            if(0 < goang && goang < 90){  //右方向に行きたかったら
-              go_flag = 2;  //右方向のストップ
-              line_flag = 2;
-            }
-            else if(-180 < goang && goang < -90){  //後ろ方向に行きたかったら
-              go_flag = 4;  //後ろ方向のストップ
-              line_flag = 4;
-            }
-            else if(90 < goang && goang < 180){  //右後ろ斜めに行きたかったら
-              go_flag = 5;  //ストップ
-              line_flag = 8;
+            if(goang < -90 || 0 < goang){
+              go_flag = 8;
             }
           }
         }
         else{
           go_flag = line_flag;
-        }
+        }          
       }
-      
     }
     else if(Line_flag == 0){  //ラインを踏んでなかったら
       A_line = 0;
@@ -389,7 +314,7 @@ void moter(double ang,double ac_val,int go_flag){  //モーター制御する関
   }
 
   if(go_flag != 0){  //ラインから逃げる感じの雰囲気だったら
-    g = 1;  //180°単位の移動方向の変化があるから出力控え目
+    g = 2;  //180°単位の移動方向の変化があるから出力控え目
   }
 
   for(int i = 0; i < 4; i++){
