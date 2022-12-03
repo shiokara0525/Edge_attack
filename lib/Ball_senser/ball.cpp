@@ -62,7 +62,7 @@ void Ball::print(){  //ボールの位置を表示
   Serial.print(" ボールのx軸上での距離 : ");
   Serial.print(far_x / 100);
   Serial.print(" ボールの角度 : ");
-  Serial.println(ang);
+  Serial.print(ang);
 }
 
 

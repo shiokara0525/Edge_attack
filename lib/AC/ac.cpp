@@ -41,7 +41,7 @@ void AC::print(){  //現在の角度、正面方向、姿勢制御の最終的�
   Serial.print(" 正面方向 : ");
   Serial.print(dir_target);
   Serial.print(" 最終的に出たやつ : ");
-  Serial.println(val);
+  Serial.print(val);
 }
 
 
