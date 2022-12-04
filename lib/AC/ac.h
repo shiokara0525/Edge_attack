@@ -25,7 +25,7 @@ private:
   double dir = 0;  //現Fの方向
   double dir_old = 0;  //前Fの方向
 
-  const float kp = 3;  //比例制御の比例定数
+  const float kp = 2;  //比例制御の比例定数
   const float kd = 5;  //微分制御の定数
 
   sensors_event_t event;  //ジャイロのいろんな値入れるやつ
