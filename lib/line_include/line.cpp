@@ -16,6 +16,7 @@ void LINE::setup() {
     LINE_Y[i] = sin(Lrad); //ラインセンサのY座標を求める
     Lsencer_Dir[i] = 15.0 * i; //ラインセンサの角度を求める
   }
+  digitalWrite(LINE_light,HIGH);
 }
 
 
@@ -38,7 +39,7 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
   double Lsencer_Dir_ave = 0; //ラインセンサの範囲の角度を出すときのラインセンサの始点と終点の和の平均
   unsigned long Ltime_move = 1000; //ラインの移動量を定期的に計測するための時間の間隔
 
-  digitalWrite(LINE_light,HIGH);
+  
 
   for(int j=0; j<100; j++) //ラインセンサを24個読み取るを1セットとし、100セット読み取る
   {
@@ -67,7 +68,6 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
       }
     }
   }
-  digitalWrite(LINE_light,LOW);
 
   for(int i=0; i<24; i++) //24個のラインセンサを指定する
   {
@@ -200,7 +200,7 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
 
 
 void LINE::print(){
-  Serial.print("角度 : ");
+  Serial.print(" 角度 : ");
   Serial.print(Lvec_Dir); //ラインのベクトルを表示
   Serial.print(" 距離 : ");
   Serial.print(Lvec_Long); //ラインのベクトルを表示

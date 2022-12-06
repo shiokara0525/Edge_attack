@@ -25,9 +25,9 @@ LINE line;
 
 
 void moter(double,double,int);  //モーター制御関数
-double val_max = 100;  //モーターの最大値
+double val_max = 150;  //モーターの最大値
 int Mang[4] = {45,135,225,315};  //モーターの角度
-double mSin[4];  //行列式のsinの値
+double mSin[4];  //行列式のsinの値2
 double mCos[4];  //行列式のcosの値
 
 
@@ -49,7 +49,7 @@ void setup(){
   Serial.begin(9600);  //シリアルプリントできるよ
   Wire.begin();  //I2Cできるよ
   ball.setup();  //ボールとかのセットアップ
-  line.setup();  //ラインとかのセットアップ
+  
   
   
   for(int i = 0; i < 4; i++){
@@ -71,6 +71,7 @@ void setup(){
     else if(A == 2){
       if(digitalRead(Tact_Switch) == HIGH){  //手が離されたらその時点で正面方向決定
         ac.setup();  //正面方向決定(その他姿勢制御関連のセットアップ)
+        line.setup();  //ラインとかのセットアップ
         delay(100);
         A = 3;  //メインプログラムいけるよ
       }
@@ -93,7 +94,7 @@ void loop(){
   double AC_val = 100;  //姿勢制御の最終的な値を入れるグローバル変数
   double goang = 0;  //進みたい角度
   int go_flag = 0;  //回り込みでは回り込みする方向、ラインではラインを踏んでる方向
-  double ang_defference = 250 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
+  double ang_defference = 500 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
   int Line_flag = 0;  //ライン踏んでるか踏んでないか
   
   
@@ -105,7 +106,7 @@ void loop(){
   }
   
   if(A == 20){
-    if(abs(ball.ang) < 30){  //前にボールがあったら
+    if(abs(ball.ang) < 15){  //前にボールがあったら
       A_go = 0;
       if(A_go != B_go){
         B_go = A_go;
@@ -156,7 +157,7 @@ void loop(){
       A_line = 1;
       if(A_line != B_line){
         B_line = A_line;
-          if(40 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 130){
+          if(60 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 120){
             if(goang < 0 && line.Lvec_Dir < 0){
               go_flag = 1;
               line_flag = 1;
@@ -166,13 +167,13 @@ void loop(){
               line_flag = 2;
             }
           }
-        else if(abs(line.Lvec_Dir) < 20){
+        else if(abs(line.Lvec_Dir) < 30){
           if(abs(goang) < 90){
             go_flag = 3;
             line_flag = 3;
           }
         }
-        else if(abs(line.Lvec_Dir) > 160){
+        else if(abs(line.Lvec_Dir) > 150){
           if(90 < abs(goang)){
             go_flag = 4;
             line_flag = 4;
@@ -188,7 +189,7 @@ void loop(){
           else{  //右前斜め方向にラインあったら
             if(-90 < goang && goang < 180){
               go_flag = 6;
-              line_flag = 7;
+              line_flag = 6;
             }
           }
         }
@@ -210,24 +211,24 @@ void loop(){
       else{  //連続でライン踏んでたら
         if(30 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 60){  //前斜め方向にラインあったら
           if(line.Lvec_Dir < 0){  //左前斜め方向にラインあったら
-            if(-180 < goang && goang < 90){
+            if(-135 < goang && goang < 45){
               go_flag = 5;
             }
           }
           else{  //右前斜め方向にラインあったら
-            if(-90 < goang && goang < 180){
+            if(-45 < goang && goang < 135){
               go_flag = 6;
             }
           }
         }
-        else if(110 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 160){  //後ろ斜め方向にラインあったら
+        else if(120 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 150){  //後ろ斜め方向にラインあったら
           if(line.Lvec_Dir < 0){  //左後ろ斜めにラインあったら
-            if(goang < 0 || -90 < goang ){
+            if((45 < goang) || (goang < -135) ){
               go_flag = 7;
             }
           }
           else{  //右後ろ斜めにラインあったら
-            if(goang < -90 || 0 < goang){
+            if((goang < -45) || (135 < goang) ){
               go_flag = 8;
             }
           }
@@ -251,8 +252,54 @@ void loop(){
     goang = goang * -1;  //角度を反転させる
     moter(goang,AC_val,go_flag);  //モーターの処理
 
+    line.print();
+    Serial.print("ラインのやつ : ");
+    Serial.print(go_flag);
+    Serial.print(" 進みたい角度 : ");
+    Serial.print(goang);
+    
+
     A = 10;
     Serial.println("");
+
+    if(digitalRead(Tact_Switch) == LOW){
+      A = 50; //スイッチから手が離されるのを待つ
+      for(int i = 0; i < 4; i++){
+        digitalWrite(pah[i],LOW);
+        analogWrite(ena[i],0);
+      }
+    }
+    
+  }
+  if(A == 50){
+    if(digitalRead(Tact_Switch) == HIGH){
+      delay(100);
+      A = 60;
+      digitalWrite(line.LINE_light,LOW);
+    }
+  }
+  if(A == 60){
+    if(digitalRead(Tact_Switch) == LOW){
+      ac.setup_2();
+      A = 70;
+    }
+  }
+  if(A == 70){
+    digitalWrite(line.LINE_light,HIGH);
+    if(digitalRead(Tact_Switch) == HIGH){
+      A = 80;
+      
+    }
+  }
+  if(A == 80){
+    if(digitalRead(Tact_Switch) == LOW){
+      A = 90;
+    }
+  }
+  if(A == 90){
+    if(digitalRead(Tact_Switch) == HIGH){
+      A = 10;
+    }
   }
 }
 
@@ -266,6 +313,8 @@ void moter(double ang,double ac_val,int go_flag){  //モーター制御する関
   double val = val_max;        //モーターの値の上限値
   double mval_x = cos(radians(ang));  //進みたいベクトルのx成分
   double mval_y = sin(radians(ang));  //進みたいベクトルのy成分
+
+  float back_val = 2;
   
   val -= ac_val;  //姿勢制御とその他のモーターの値を別に考えるために姿勢制御の値を引いておく
   
@@ -275,28 +324,28 @@ void moter(double ang,double ac_val,int go_flag){  //モーター制御する関
     }
     
     else if(go_flag == 1){  //左のストップかかってたら
-      Mval[i] = -mSin[i] * mval_x - mCos[i] * 4;
+      Mval[i] = -mSin[i] * mval_x + mCos[i] * -back_val;
     }
     else if(go_flag == 2){  //右のストップかかってたら
-      Mval[i] = -mSin[i] * mval_x + mCos[i] * 4;
+      Mval[i] = -mSin[i] * mval_x + mCos[i] * back_val;
     }
     else if(go_flag == 3){  //前のストップかかってたら
-      Mval[i] = mCos[i] * mval_y + mSin[i] * 4;
+      Mval[i] = mCos[i] * mval_y + -mSin[i] * -back_val;
     }
     else if(go_flag == 4){  //後ろのストップかかってたら
-      Mval[i] = mCos[i] * mval_y + mSin[i] * -4;
+      Mval[i] = mCos[i] * mval_y + -mSin[i] * back_val;
     }
     else if(go_flag == 5){  //ストップ
-      Mval[i] = -mSin[i] * -5 + mCos[i] * -5;
+      Mval[i] = -mSin[i] * -back_val + mCos[i] * -back_val;
     }
     else if(go_flag == 6){
-      Mval[i] = -mSin[i] * -5 + mCos[i] * 5;
+      Mval[i] = -mSin[i] * -back_val + mCos[i] * back_val;
     }
     else if(go_flag == 7){
-      Mval[i] = -mSin[i] * 4 + mCos[i] * -4;
+      Mval[i] = -mSin[i] * back_val + mCos[i] * back_val;
     }
     else if(go_flag == 8){
-      Mval[i] = -mSin[i] * 4 + mCos[i] * 4;
+      Mval[i] = -mSin[i] * -back_val + mCos[i] * back_val;
     }
     else if(go_flag == 9){
       Mval[i] = 0;
@@ -313,6 +362,7 @@ void moter(double ang,double ac_val,int go_flag){  //モーター制御する関
   
   for(int i = 0; i < 4; i++){
     Mval[i] = Mval[i] / g * val + ac_val;  //モーターの値を計算(進みたいベクトルの値と姿勢制御の値を合わせる)
+
     if(ac.flag == 1){
       digitalWrite(pah[i],LOW);
       analogWrite(ena[i],0);
