@@ -94,7 +94,7 @@ void loop(){
   double AC_val = 100;  //姿勢制御の最終的な値を入れるグローバル変数
   double goang = 0;  //進みたい角度
   int go_flag = 0;  //回り込みでは回り込みする方向、ラインではラインを踏んでる方向
-  double ang_defference = 500 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
+  double ang_defference = 300 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
   int Line_flag = 0;  //ライン踏んでるか踏んでないか
   
   
@@ -106,7 +106,7 @@ void loop(){
   }
   
   if(A == 20){
-    if(abs(ball.ang) < 15){  //前にボールがあったら
+    if(abs(ball.ang) < 15 || (B_go == 0 && abs(ball.ang) < 45)){  //前にボールがあったら
       A_go = 0;
       if(A_go != B_go){
         B_go = A_go;
@@ -117,6 +117,7 @@ void loop(){
       A_go = 10;
       if(A_go != B_go){  //前Fここに入ってなかったら
         B_go = A_go;
+
         if(ball.ang < 0){  //ボールが左にあったら
           mawarikomi_flag = 0;  //右方向に回り込み
         }
@@ -124,11 +125,12 @@ void loop(){
           mawarikomi_flag = 1;  //左方向に回り込み
         }
       }
+
       if(mawarikomi_flag == 0){  //右方向に回り込み
-        goang = abs(ball.ang) + 2 * ang_defference;  //回り込みの角度を急にする(角度の差分を大きくする)
+        goang = abs(ball.ang) + 3 * ang_defference;  //回り込みの角度を急にする(角度の差分を大きくする)
       }
       else{  //左方向に回り込み
-        goang = -abs(ball.ang) - 2 * ang_defference;  //回り込みの角度を急にする(角度の差分を大きくする)
+        goang = -abs(ball.ang) - 3 * ang_defference;  //回り込みの角度を急にする(角度の差分を大きくする)
       }
     }
     else{  //ボールが前とも後ろとも言えない横とかにあったら
@@ -147,6 +149,15 @@ void loop(){
       }
       else{
         goang = ball.ang + ang_defference;  //右に回り込み
+      }
+    }
+
+    if(abs(goang) > 180){
+      if(goang < 0){
+        goang += 360;
+      }
+      else{
+        goang -= 360;
       }
     }
     A = 30;
@@ -237,6 +248,9 @@ void loop(){
           go_flag = line_flag;
         }
       }
+      if(go_flag == 0){
+        B_line = 0;
+      }
     }
     else if(Line_flag == 0){  //ラインを踏んでなかったら
       A_line = 0;
@@ -252,22 +266,12 @@ void loop(){
     goang = goang * -1;  //角度を反転させる
     moter(goang,AC_val,go_flag);  //モーターの処理
 
-    line.print();
-    Serial.print("ラインのやつ : ");
-    Serial.print(go_flag);
-    Serial.print(" 進みたい角度 : ");
-    Serial.print(goang);
-    
-
+    ball.print();
     A = 10;
     Serial.println("");
 
     if(digitalRead(Tact_Switch) == LOW){
       A = 50; //スイッチから手が離されるのを待つ
-      for(int i = 0; i < 4; i++){
-        digitalWrite(pah[i],LOW);
-        analogWrite(ena[i],0);
-      }
     }
     
   }
@@ -276,6 +280,10 @@ void loop(){
       delay(100);
       A = 60;
       digitalWrite(line.LINE_light,LOW);
+      for(int i = 0; i < 4; i++){
+        digitalWrite(pah[i],LOW);
+        analogWrite(ena[i],0);
+      }
     }
   }
   if(A == 60){
