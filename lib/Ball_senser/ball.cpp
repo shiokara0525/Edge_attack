@@ -40,12 +40,12 @@ void Ball::getBallposition(){  //ボールの位置を極座標系で取得
   low_acc[cou % MAX] = low_cou;  //最新の値を配列に入れる(リングバッファ使ってる)
   cou++;  //この関数の呼び出し回数をカウント
 
-  for(int i = 0; i < 100; i++){
+  for(int i = 0; i < MAX; i++){
     low_all += low_acc[i];  //値がsen_lowest以下だったセンサーの数を合計
   }
 
-  Bfar = low_all / (cou < 100 ? cou : 100);  //ボールの距離を計算
-  Bang = atan2(Bfar_y,Bfar_x) * 180 / pi;    //ボールの角度を計算(atan2はラジアンで返すので角度に変換)  
+  Bfar = low_all / (cou < MAX ? cou : MAX) - 2;  //ボールの距離を計算
+  Bang = degrees(atan2(Bfar_y,Bfar_x));    //ボールの角度を計算(atan2はラジアンで返すので角度に変換)  
 
   ang = Bang;
   far = Bfar;
@@ -59,10 +59,8 @@ void Ball::getBallposition(){  //ボールの位置を極座標系で取得
 void Ball::print(){  //ボールの位置を表示
   Serial.print(" ボールの距離 : ");
   Serial.print(far);
-  Serial.print(" ボールのx軸上での距離 : ");
-  Serial.print(far_x / 100);
   Serial.print(" ボールの角度 : ");
-  Serial.println(ang);
+  Serial.print(ang);
 }
 
 
@@ -74,7 +72,7 @@ void Ball::setup(){  //ボール関連のセットアップ
     Cos[i] = cos(radians(i * 22.5));  //cosの22.5度ごとの値を配列に入れる
     Sin[i] = sin(radians(i * 22.5));  //sinの22.5度ごとの値を配列に入れる
   }
-  for(int i = 0; i < 100; i++){
+  for(int i = 0; i < MAX; i++){
     low_acc[i] = 0;  //配列の中の値を0にする
   }
 }
