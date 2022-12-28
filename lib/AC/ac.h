@@ -14,6 +14,7 @@ public:
   void print();  //姿勢制御関連のやつを表示
   void setup();  //姿勢制御のセットアップ
   void setup_2();
+  double dir = 0;  //現Fの方向
 
 private:
   double nowTime = 0;  //関数で見た時の時間
@@ -23,7 +24,6 @@ private:
   double val = 0;  //姿勢制御の値
   double val_old = 0;  //1F前の姿勢制御の値
 
-  double dir = 0;  //現Fの方向
   double dir_old = 0;  //前Fの方向
 
   const float kp = 2;  //比例制御の比例定数

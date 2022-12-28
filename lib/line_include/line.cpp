@@ -189,7 +189,7 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
     Lvec_Long_move = sqrt(pow(abs(Lvec_X_move),2) + pow(abs(Lvec_Y_move),2)); //ラインのベクトルの長さを求める
     timer1.reset();  //もう一度Ltime_moveの時間の計測をする（定期的にラインの移動量を計測するため）
   }
-  Lvec_Dir = atan2(Lvec_Y, Lvec_X) * 180.0 / PI; //ラインのベクトルの角度を求める
+  Lvec_Dir = degrees(atan2(Lvec_Y, Lvec_X)); //ラインのベクトルの角度を求める
   Lvec_Long = sqrt(pow(abs(Lvec_X),2) + pow(abs(Lvec_Y),2)); //ラインのベクトルの長さを求める
 
   LINE_on = 1; //ラインがロボットの下にあったとする（ラインの移動ベクトルを求めるときに使う）

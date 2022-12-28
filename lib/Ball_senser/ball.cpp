@@ -7,6 +7,8 @@
 
 
 void Ball::getBallposition(){  //ボールの位置を極座標系で取得
+  double Bfar_y_all = 0;
+  double Bfar_x_all = 0;
   double Bfar = 0;  //グローバル変数に戻す前の変数(直接代入するのはは何となく不安)
   double Bang = 0;  //グローバル変数に戻す前の変数
   int Bval[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; //ボールの値
@@ -38,19 +40,23 @@ void Ball::getBallposition(){  //ボールの位置を極座標系で取得
   }
 
   low_acc[cou % MAX] = low_cou;  //最新の値を配列に入れる(リングバッファ使ってる)
+  far_y_acc[cou % MAX] = Bfar_y;
+  far_x_acc[cou % MAX] = Bfar_x;
   cou++;  //この関数の呼び出し回数をカウント
 
   for(int i = 0; i < MAX; i++){
     low_all += low_acc[i];  //値がsen_lowest以下だったセンサーの数を合計
+    Bfar_y_all += far_y_acc[i]; 
+    Bfar_x_all += far_x_acc[i];
   }
 
-  Bfar = low_all / (cou < MAX ? cou : MAX) - 2;  //ボールの距離を計算
   Bang = degrees(atan2(Bfar_y,Bfar_x));    //ボールの角度を計算(atan2はラジアンで返すので角度に変換)  
 
   ang = Bang;
+  far_x = Bfar_x_all * 0.005;
+  far_y = Bfar_y_all * 0.005;
+  Bfar = sqrt((far_x * far_x) + (far_y * far_y));
   far = Bfar;
-  far_x = Bfar_x;
-  far_y = Bfar_y;
 }
 
 

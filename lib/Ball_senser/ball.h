@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define MAX 100
+#define MAX 20
 
 class Ball{
 public:
@@ -18,6 +18,8 @@ public:
 private:
   int cou = 0;  //ボールを見た回数(getBallpositionに入った回数をカウントするやつ)
   double low_acc[MAX];  //ボールまでの距離(最新100回分をはかるように、円環バッファを使う)
+  double far_x_acc[MAX];
+  double far_y_acc[MAX];
   double Sin[16]; //sinの値(22.5°ずつ)
   double Cos[16]; //cosの値(22.5°ずつ)
 
