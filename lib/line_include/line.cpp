@@ -21,7 +21,7 @@ void LINE::setup() {
 
 
 
-
+ 
 int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得する関数
   int data[24][100]; //ラインセンサの値を格納する二次元配列
   int data_sum[24]; //ラインセンサの値の合計を格納する配列
@@ -169,7 +169,7 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
     LINE_on = 0; //ラインがロボットの下になかったとする（ラインの移動ベクトルを求めるときに使う）
     Lvec_X_old = 0; //ラインがないので、過去の値をなかったものとする
     Lvec_Y_old = 0; //ラインがないので、過去の値をなかったものとする
-    return 0; //関数から抜ける
+    return 0; //関数から抜ける  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   };
 
   if(LINE_on == 0) //初めてラインを発見したら、ラインの最大のベクトルを記録する
