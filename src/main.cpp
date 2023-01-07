@@ -132,6 +132,7 @@ void loop(){
     if(ball.far_x == 0 || ball.far_y == 0){
       int flag = 0;
       while(flag != 1){
+        ball.getBallposition();
         moter_0();
         if(ball.far_x != 0 || ball.far_y != 0){
           flag == 1;
@@ -272,8 +273,16 @@ void loop(){
   }
 
   if(A == 40){  //最終的に処理するとこ(モーターとかも)    
-    moter(goang,AC_val,go_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
-
+    //moter(goang,AC_val,go_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
+    Serial.print(" go_flag = ");
+    Serial.print(line_flag);
+    Serial.print(" line_dir = ");
+    Serial.print(line_dir);
+    Serial.print(" goang = ");
+    Serial.print(goang);
+    Serial.print(" Line_flag = ");
+    Serial.print(Line_flag);
+    line.print();
     A = 10;
     Serial.println("");
 

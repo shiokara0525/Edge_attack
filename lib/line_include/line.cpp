@@ -23,7 +23,7 @@ void LINE::setup() {
 
 
 int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得する関数
-  int LniseF = 100;  //ラインセンサのノイズフィルタを行う回数
+  int LniseF = 50;  //ラインセンサのノイズフィルタを行う回数
   int Lnone = 0;  //ラインセンサのノイズフィルタリングをするために使う変数
   int data[24][LniseF]; //ラインセンサの値を格納する二次元配列
   int data_sum[24]; //ラインセンサの値の合計を格納する配列
@@ -229,10 +229,10 @@ void LINE::print(){
   Serial.print(Lvec_Dir); //ラインのベクトルを表示
   Serial.print(" 距離 : ");
   Serial.print(Lvec_Long); //ラインのベクトルを表示
-  Serial.print("  移動角度 : ");
-  Serial.print(Lvec_Dir_move); //ラインのベクトルを表示
-  Serial.print("  移動距離 : ");
-  Serial.print(Lvec_Long_move); //ラインのベクトルを表示
+  // Serial.print("  移動角度 : ");
+  // Serial.print(Lvec_Dir_move); //ラインのベクトルを表示
+  // Serial.print("  移動距離 : ");
+  // Serial.print(Lvec_Long_move); //ラインのベクトルを表示
 }
 
 
