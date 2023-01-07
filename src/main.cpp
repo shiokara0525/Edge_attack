@@ -9,6 +9,7 @@
 const int ena[4] = {28,2,0,4};
 const int pah[4] = {29,3,1,5};
 const int Tact_Switch = 15;
+const int toggle_Switch = 14;
 const double pi = 3.1415926535897932384;  //円周率
 
 /*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
@@ -24,14 +25,11 @@ LINE line;
 
 
 void moter(double,double,int);  //モーター制御関数
+void moter_0();
 double val_max = 110;  //モーターの最大値
 int Mang[4] = {45,135,225,315};  //モーターの角度
 double mSin[4] = {1,1,-1,-1};  //行列式のsinの値
 double mCos[4] = {1,-1,-1,1};  //行列式のcosの値
-
-
-int A_go = 0;  //どんな動きしてるか
-int B_go = 999;  //前回どんな動きしてたか
 
 int mawarikomi_flag = 0;
 
@@ -40,6 +38,7 @@ int B_line = 999;  //前回踏んでるか踏んでないか
 
 int line_flag = 0;  //どんな風にラインの判定したか記録
 
+double line_dir_old = 0;
 
 /*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
 
@@ -97,8 +96,8 @@ void loop(){
   
   int Line_flag = 0;  //ライン踏んでるか踏んでないか
   double line_dir;
-  
-  
+
+
   if(A == 10){  //情報入手
     ball.getBallposition();  //ボールの位置取得
     AC_val = ac.getAC_val();  //姿勢制御の値入手
@@ -107,11 +106,10 @@ void loop(){
     line_dir += ac.dir;
     A = 20;
   }
-  
+
   if(A == 20){
     double ang_defference = 10 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
-
-    goang = ball.ang + (ball.ang * 0.5) * (1 + ang_defference);
+    goang = ball.ang + (ball.ang * 0.7) * (1 + ang_defference);
 
     if(270 < abs(goang)){
       if(goang < 0){
@@ -121,11 +119,6 @@ void loop(){
         goang = 270;
       }
     }
-
-    // Serial.print(" 回り込みの差分 : ");
-    // Serial.print((ball.ang * 0.8) * (1 + ang_defference));
-    // Serial.print(" 距離による差分 : "); 
-    // Serial.print(ball.ang * 0.8 * ang_defference);
     
     if(abs(goang) > 180){
       if(goang < 0){
@@ -133,6 +126,16 @@ void loop(){
       }
       else{
         goang -= 360;
+      }
+    }
+
+    if(ball.far_x == 0 || ball.far_y == 0){
+      int flag = 0;
+      while(flag != 1){
+        moter_0();
+        if(ball.far_x != 0 || ball.far_y != 0){
+          flag == 1;
+        }
       }
     }
     A = 30;
@@ -146,36 +149,30 @@ void loop(){
         B_line = A_line;
           if(60 < abs(line_dir) && abs(line_dir) < 120){  //真横にライン踏んでたら
             if(goang < 0 && line_dir < 0){  //左方向でライン踏んでて左に進もうとしてたら
-              go_flag = 1;  //右寄りに進みながら縦方向の成分は維持して動くよ!
               line_flag = 1;  //これはライン離れるまで同じ動きするための変数(ラインを通り越して左で踏んでたはずが右で踏んじゃった~みたいなことになったら困るから)
             }
             else if(goang > 0 && line_dir > 0){  //右方向でライン踏んでて右に進もうとしてたら
-              go_flag = 2;  //左寄りに進みながら縦方向の移動の成分は維持して動くよ!
               line_flag = 2;
             }
           }
         else if(abs(line_dir) < 30){  //前でライン踏んでたら
           if(abs(goang) < 90){  //前方向に進もうとしてたら
-            go_flag = 3;  //ちょい後ろ進みながら横方向には進むよ！
             line_flag = 3;
           }
         }
         else if(abs(line_dir) > 150){  //後ろでライン踏んでたら
           if(90 < abs(goang)){  //後ろ向きに進もうとしてたら
-            go_flag = 4;  //ちょい前進みながら横方向に進むよ!
             line_flag = 4;
           }
         }
         else if(30 < abs(line_dir) && abs(line_dir) < 70){  //前斜め方向にラインあったら
           if(line_dir < 0){  //左前斜め方向にラインあったら
             if(-180 < goang && goang < 90){  //右後ろ以外に進もうとしてたら
-              go_flag = 5;  //ストップ!
               line_flag = 5;
             }
           }
           else{  //右前斜め方向にラインあったら
             if(-90 < goang && goang < 180){  //左後ろ以外に進もうとしてたら
-              go_flag = 6;  //ストップ！
               line_flag = 6;
             }
           }
@@ -183,13 +180,11 @@ void loop(){
         else if(120 < abs(line_dir) && abs(line_dir) < 150){  //後ろ斜め方向にラインあったら
           if(line_dir < 0){  //左後ろ斜めにラインあったら
             if(goang < 0 || -90 < goang ){  //右前以外に進もうとしてたら
-              go_flag = 7;  //ストップ！
               line_flag = 7;
             }
           }
           else{  //右後ろ斜めにラインあったら
             if(goang < -90 || 0 < goang){  //左前以外に進もうとしてたら
-              go_flag = 8;  //ストップ！
               line_flag = 8;
             }
           }
@@ -197,6 +192,9 @@ void loop(){
       }
 
       else{  //連続でライン踏んでたら(踏んだまま斜めのとこ来て動き続けてたら怖いから斜めのとこ対策)
+        if(20 < abs(line_dir - line_dir_old) && abs(line_dir - line_dir_old) < 40){
+          line_dir = line_dir_old;
+        }
         int flag = 0;
         if(line_flag == 5 || line_flag == 6 || line_flag == 7 || line_flag == 8){
           flag = line_flag;
@@ -205,14 +203,12 @@ void loop(){
           if(30 < abs(line_dir) && abs(line_dir) < 60){  //前斜め方向にラインあったら
             if(line_dir < 0){  //左前斜め方向にラインあったら
               if(-180 < goang && goang < 90){
-                go_flag = 5;
                 line_flag = 5;
                 Serial.print(" 変わったよ!(5) ");
               }
             }
             else{  //右前斜め方向にラインあったら
               if(-90 < goang && goang < 180){
-                go_flag = 6;
                 line_flag = 6;
                 Serial.print(" 変わったよ!(6) ");
               }
@@ -220,15 +216,13 @@ void loop(){
           }
           else if(120 < abs(line_dir) && abs(line_dir) < 150){  //後ろ斜め方向にラインあったら
             if(line_dir < 0){  //左後ろ斜めにラインあったら
-              if((45 < goang) || (goang < -135) ){
-                go_flag = 7;
+              if(45 < goang || goang < -135 ){
                 line_flag = 7;
                 Serial.print(" 変わったよ!(7) ");
               }
             }
             else{  //右後ろ斜めにラインあったら
-              if((goang < -45) || (135 < goang) ){
-                go_flag = 8;
+              if(goang < -45 || 135 < goang ){
                 line_flag = 8;
                 Serial.print(" 変わったよ!(8) ");
               }
@@ -248,7 +242,7 @@ void loop(){
         else if(line_flag == 3 || line_flag == 4){
           if(60 < abs(line_dir) && abs(line_dir) < 120){  //真横にライン踏んでたら
             if(goang < 0 && line_dir < 0){  //左方向でライン踏んでて左に進もうとしてたら
-              line_flag = 1;  //これはライン離れるまで同じ動きするための変数(ラインを通り越して左で踏んでたはずが右で踏んじゃった~みたいなことになったら困るから)
+              line_flag = 1;
             }
             else if(goang > 0 && line_dir > 0){  //右方向でライン踏んでて右に進もうとしてたら
               line_flag = 2;
@@ -257,10 +251,10 @@ void loop(){
         }
 
         if(flag != 0){
-          go_flag = flag;
           line_flag = flag;
         }
         go_flag = line_flag;
+        line_dir_old = line_dir;
       }
       if(go_flag == 0){  //ライン踏んでるけど別に進んでいいよ～って時
         B_line = 0;  //ラインで特に影響受けてないからライン踏んでないのと扱い同じのほうが都合いいよね!
@@ -272,19 +266,14 @@ void loop(){
         B_line = A_line;  //今回はライン踏んでないよ
       }
       go_flag = 0;  //ライン踏んでない
-      line_flag = 0; //aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      line_flag = 0;
     }
     A = 40;
   }
 
-  if(A == 40){  //最終的に処理するとこ(モーターとかも)
-    
+  if(A == 40){  //最終的に処理するとこ(モーターとかも)    
     moter(goang,AC_val,go_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
-    Serial.print(" ラインの角度 : ");
-    Serial.print(line_dir);
-    Serial.print(" ラインのフラグ : ");
-    Serial.print(line_flag);
-    line.print();
+
     A = 10;
     Serial.println("");
 
@@ -399,5 +388,15 @@ void moter(double ang,double ac_val,int go_flag){  //モーター制御する関
   if(ac.flag == 1){  //姿勢制御のせいでモータードライバがストップしちゃいそうだったら
     delay(100);   //ちょっと待つ
     ac.flag = 0;  //姿勢制御のフラグを下ろす
+  }
+}
+
+
+
+
+void moter_0(){
+  for(int i = 0; i < 4; i++){
+    digitalWrite(pah[i],LOW);
+    analogWrite(ena[i],0);
   }
 }
