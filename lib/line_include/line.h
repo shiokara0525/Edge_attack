@@ -9,9 +9,9 @@ public:
     int getLINE_Vec(); //ラインセンサのベクトル(距離,角度)を取得する関数
     void print();
     void setup();
+    double Lvec_dir_output();
 
     double Lvec_Long; //ラインのベクトルの長さ
-    double Lvec_Dir; //ラインの和のベクトルの角度
     double Lvec_Long_move; //ラインのベクトルの長さの移動量
     double Lvec_Dir_move; //ラインの和のベクトルの角度の移動量
 
@@ -19,6 +19,7 @@ public:
     const int LINE_light = 27; //ラインセンサのLEDを光らせるかの制御をするためのピン
 
 private:
+    double Lvec_Dir; //ラインの和のベクトルの角度
     const int LINE_1 = 23; //ラインセンサIC1の出力を読み取るためのピン
     const int LINE_2 = 22; //ラインセンサIC2の出力を読み取るためのピン
     const int LINE_3 = 21; //ラインセンサIC3の出力を読み取るためのピン

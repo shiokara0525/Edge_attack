@@ -209,3 +209,10 @@ void LINE::print(){
   Serial.print("  移動距離 : ");
   Serial.print(Lvec_Long_move); //ラインのベクトルを表示
 }
+
+
+
+
+double LINE::Lvec_dir_output(){
+  return Lvec_Dir;
+}

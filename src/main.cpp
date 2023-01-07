@@ -69,6 +69,7 @@ void setup(){
     }
     else if(A == 2){
       if(digitalRead(Tact_Switch) == HIGH){  //手が離されたらその時点で正面方向決定
+        ball.setup();
         ac.setup();  //正面方向決定(その他姿勢制御関連のセットアップ)
         line.setup();  //ラインとかのセットアップ
         delay(100);
@@ -101,14 +102,28 @@ void loop(){
     ball.getBallposition();  //ボールの位置取得
     AC_val = ac.getAC_val();  //姿勢制御の値入手
     Line_flag = line.getLINE_Vec();  //ライン踏んでるか踏んでないかを判定
-    line.Lvec_Dir += ac.dir;
     A = 20;
   }
   
   if(A == 20){
-    double ang_defference = 60 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
+    double ang_defference = 5 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
 
-    goang = ball.ang + (ball.ang * 0.5) * (1 + ang_defference);
+    goang = ball.ang + (ball.ang * 0.8) * (1 + ang_defference);
+
+    if(270 < abs(goang)){
+      if(goang < 0){
+        goang = -270;
+      }
+      else{
+        goang = 270;
+      }
+    }
+
+    // Serial.print(" 回り込みの差分 : ");
+    // Serial.print((ball.ang * 0.8) * (1 + ang_defference));
+    // Serial.print(" 距離による差分 : "); 
+    // Serial.print(ball.ang * 0.8 * ang_defference);
+    
     if(abs(goang) > 180){
       if(goang < 0){
         goang += 360;
@@ -126,36 +141,30 @@ void loop(){
 
       if(A_line != B_line){  //前回はライン踏んでなくて今回はライン踏んでるよ～ってとき(どういう風に動くか決めるよ!)
         B_line = A_line;
-          if(60 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 120){  //真横にライン踏んでたら
-            if(goang < 0 && line.Lvec_Dir < 0){  //左方向でライン踏んでて左に進もうとしてたら
+          if(60 < abs(line.Lvec_dir_output()) && abs(line.Lvec_dir_output()) < 120){  //真横にライン踏んでたら
+            if(goang < 0 && line.Lvec_dir_output() < 0){  //左方向でライン踏んでて左に進もうとしてたら
               go_flag = 1;  //右寄りに進みながら縦方向の成分は維持して動くよ!
               line_flag = 1;  //これはライン離れるまで同じ動きするための変数(ラインを通り越して左で踏んでたはずが右で踏んじゃった~みたいなことになったら困るから)
-              if(mawarikomi_flag == 2){
-                mawarikomi_flag = 1;
-              }
             }
-            else if(goang > 0 && line.Lvec_Dir > 0){  //右方向でライン踏んでて右に進もうとしてたら
+            else if(goang > 0 && line.Lvec_dir_output() > 0){  //右方向でライン踏んでて右に進もうとしてたら
               go_flag = 2;  //左寄りに進みながら縦方向の移動の成分は維持して動くよ!
               line_flag = 2;
-              if(mawarikomi_flag == 1){
-                mawarikomi_flag = 2;
-              }
             }
           }
-        else if(abs(line.Lvec_Dir) < 30){  //前でライン踏んでたら
+        else if(abs(line.Lvec_dir_output()) < 30){  //前でライン踏んでたら
           if(abs(goang) < 90){  //前方向に進もうとしてたら
             go_flag = 3;  //ちょい後ろ進みながら横方向には進むよ！
             line_flag = 3;
           }
         }
-        else if(abs(line.Lvec_Dir) > 150){  //後ろでライン踏んでたら
+        else if(abs(line.Lvec_dir_output()) > 150){  //後ろでライン踏んでたら
           if(90 < abs(goang)){  //後ろ向きに進もうとしてたら
             go_flag = 4;  //ちょい前進みながら横方向に進むよ!
             line_flag = 4;
           }
         }
-        else if(20 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 70){  //前斜め方向にラインあったら
-          if(line.Lvec_Dir < 0){  //左前斜め方向にラインあったら
+        else if(20 < abs(line.Lvec_dir_output()) && abs(line.Lvec_dir_output()) < 70){  //前斜め方向にラインあったら
+          if(line.Lvec_dir_output() < 0){  //左前斜め方向にラインあったら
             if(-180 < goang && goang < 90){  //右後ろ以外に進もうとしてたら
               go_flag = 5;  //ストップ!
               line_flag = 5;
@@ -168,8 +177,8 @@ void loop(){
             }
           }
         }
-        else if(110 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 160){  //後ろ斜め方向にラインあったら
-          if(line.Lvec_Dir < 0){  //左後ろ斜めにラインあったら
+        else if(110 < abs(line.Lvec_dir_output()) && abs(line.Lvec_dir_output()) < 160){  //後ろ斜め方向にラインあったら
+          if(line.Lvec_dir_output() < 0){  //左後ろ斜めにラインあったら
             if(goang < 0 || -90 < goang ){  //右前以外に進もうとしてたら
               go_flag = 7;  //ストップ！
               line_flag = 7;
@@ -185,8 +194,8 @@ void loop(){
       }
 
       else{  //連続でライン踏んでたら(踏んだまま斜めのとこ来て動き続けてたら怖いから斜めのとこ対策)
-        if(20 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 70){  //前斜め方向にラインあったら
-          if(line.Lvec_Dir < 0){  //左前斜め方向にラインあったら
+        if(20 < abs(line.Lvec_dir_output()) && abs(line.Lvec_dir_output()) < 70){  //前斜め方向にラインあったら
+          if(line.Lvec_dir_output() < 0){  //左前斜め方向にラインあったら
             if(-180 < goang && goang < 90){
               go_flag = 5;
               line_flag = 5;
@@ -199,8 +208,8 @@ void loop(){
             }
           }
         }
-        else if(110 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 160){  //後ろ斜め方向にラインあったら
-          if(line.Lvec_Dir < 0){  //左後ろ斜めにラインあったら
+        else if(110 < abs(line.Lvec_dir_output()) && abs(line.Lvec_dir_output()) < 160){  //後ろ斜め方向にラインあったら
+          if(line.Lvec_dir_output() < 0){  //左後ろ斜めにラインあったら
             if((45 < goang) || (goang < -135) ){
               go_flag = 7;
               line_flag = 7;
@@ -214,18 +223,31 @@ void loop(){
           }
         }
 
+        if(line_flag == 1 || line_flag == 2){
+          if(abs(line.Lvec_dir_output()) < 15){
+            line_flag = 3;
+          }
+          else if(abs(line.Lvec_dir_output()) > 165){
+            line_flag = 4;
+          }
+        }
+        else if(line_flag == 3 || line_flag == 4){
+          if(60 < abs(line.Lvec_dir_output()) && abs(line.Lvec_dir_output()) < 120){  //真横にライン踏んでたら
+            if(goang < 0 && line.Lvec_dir_output() < 0){  //左方向でライン踏んでて左に進もうとしてたら
+              line_flag = 1;  //これはライン離れるまで同じ動きするための変数(ラインを通り越して左で踏んでたはずが右で踏んじゃった~みたいなことになったら困るから)
+            }
+            else if(goang > 0 && line.Lvec_dir_output() > 0){  //右方向でライン踏んでて右に進もうとしてたら
+              line_flag = 2;
+            }
+          }
+        }
+
         if(line_flag == 5){  //角で止まり続けないためのやつ(斜めでは止まることになってるからずっと抜けれない,そりゃ困るよね)
           if(-135 < goang && goang < 45){
             go_flag = 5;  //マジで意味ない(体裁整えるためのやつ)
           }
-          else if(goang < -135){
-            line_flag = 1;
-          }
-          else if(goang < 90){
-            line_flag = 3;
-          }
-          else{
-            line_flag = 0;
+          if(60 < abs(line.Lvec_dir_output()) && abs(line.Lvec_dir_output()) < 120){  //真横にライン踏んでたら
+            go_flag = 2;
           }
         }
         else if(line_flag == 6){
@@ -285,21 +307,20 @@ void loop(){
     }
     A = 40;
   }
-  
-  if(A == 40){  //最終的に処理するとこ(モーターとかも)
-    goang = goang * -1;  //角度を反転させる
-    moter(goang,AC_val,go_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
 
-    Serial.print(" 進む角度 : ");
-    Serial.print(goang);
-    ball.print();
+  if(A == 40){  //最終的に処理するとこ(モーターとかも)
+    
+    moter(goang,AC_val,go_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
+    Serial.print(" ラインのフラグ : ");
+    Serial.print(go_flag);
+    line.print();
     A = 10;
     Serial.println("");
 
     if(digitalRead(Tact_Switch) == LOW){
       A = 50; //スイッチから手が離されるのを待つ
     }
-    
+
   }
   if(A == 50){
     if(digitalRead(Tact_Switch) == HIGH){
@@ -335,7 +356,6 @@ void loop(){
       A = 10;  //スタート!
     }
   }
-
 }
 
 
@@ -359,10 +379,10 @@ void moter(double ang,double ac_val,int go_flag){  //モーター制御する関
     }
     
     else if(go_flag == 1){  //左のストップかかってたら
-      Mval[i] = -mSin[i] * mval_x + mCos[i] * -back_val;
+      Mval[i] = -mSin[i] * mval_x + mCos[i] * back_val;
     }
     else if(go_flag == 2){  //右のストップかかってたら
-      Mval[i] = -mSin[i] * mval_x + mCos[i] * back_val;
+      Mval[i] = -mSin[i] * mval_x + mCos[i] * -back_val;
     }
     else if(go_flag == 3){  //前のストップかかってたら
       Mval[i] = mCos[i] * mval_y + -mSin[i] * -back_val;
@@ -370,8 +390,17 @@ void moter(double ang,double ac_val,int go_flag){  //モーター制御する関
     else if(go_flag == 4){  //後ろのストップかかってたら
       Mval[i] = mCos[i] * mval_y + -mSin[i] * back_val;
     }
-    else{  //斜めとかにいたら
-      Mval[i] = 0;  //完全にストップ!
+    else if(go_flag == 5){  //ストップ
+      Mval[i] = -mSin[i] * -back_val + mCos[i] * back_val;
+    }
+    else if(go_flag == 6){
+      Mval[i] = -mSin[i] * -back_val + mCos[i] * -back_val;
+    }
+    else if(go_flag == 7){
+      Mval[i] = -mSin[i] * back_val + mCos[i] * back_val;
+    }
+    else if(go_flag == 8){
+      Mval[i] = -mSin[i] * back_val + mCos[i] * -back_val;
     }
     
     if(abs(Mval[i]) > g){  //絶対値が一番高い値だったら
