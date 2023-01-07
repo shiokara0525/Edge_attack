@@ -21,9 +21,11 @@ void LINE::setup() {
 
 
 
- 
+
 int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得する関数
-  int data[24][100]; //ラインセンサの値を格納する二次元配列
+  int LniseF = 100;  //ラインセンサのノイズフィルタを行う回数
+  int Lnone = 0;  //ラインセンサのノイズフィルタリングをするために使う変数
+  int data[24][LniseF]; //ラインセンサの値を格納する二次元配列
   int data_sum[24]; //ラインセンサの値の合計を格納する配列
   int data_ave[24]; //ラインセンサの値の平均を格納する配列
   int Lnum = 0; //ラインセンサの番号
@@ -41,7 +43,7 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
 
   
 
-  for(int j=0; j<100; j++) //ラインセンサを24個読み取るを1セットとし、100セット読み取る
+  for(int j=0; j<LniseF; j++) //ラインセンサを24個読み取るを1セットとし、100セット読み取る
   {
     for(int i=0; i<8; i++)  //8chマルチプレクサ×3なので8回まわす、そして、24個のラインセンサを指定する
     {
@@ -71,12 +73,35 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
 
   for(int i=0; i<24; i++) //24個のラインセンサを指定する
   {
-    for(int j=0; j<100; j++) //ラインセンサを24個読み取るを1セットとし、100セット読み取る
+    for(int j=0; j<LniseF; j++) //ラインセンサを24個読み取るを1セットとし、100セット読み取る
     {
-      data_sum[i] = data_sum[i] + data[i][j]; //ラインセンサの値を合計する
+      // data_sum[i] = data_sum[i] + data[i][j]; //ラインセンサの値を合計する
+
+      if(LINE_Level < data[i][j]) //ラインセンサの値が閾値より大きければ（ライン上にいるとき）
+      {
+        Lnone++; //ラインセンサの上にラインがあるということを数える
+        data_sum[i] = data_sum[i] + data[i][j]; //ラインセンサ(ライン上のとき)の値を合計する
+      }
     }
-    data_ave[i] = data_sum[i] / 100; //ラインセンサの値を平均する
+
+    if(Lnone > LniseF*0.6)  //ラインを調べた60%以上がライン上にいるとき
+    {
+      data_ave[i] = data_sum[i] / Lnone; //ラインセンサの値を平均する
+    }
+    else
+    {
+      data_ave[i] = 0; //ラインセンサの値を0(ライン上にいない)にする
+    }
+    
+    // Serial.print(data_sum[i]);
+    // Serial.print(" ");
+    // Serial.print(Lnone);
+
     data_sum[i] = 0; //合計値をリセット
+    Lnone = 0; //ラインセンサの上にラインがあるということを数えるをリセット(一つのセンサごとに)
+
+    // Serial.print(data_ave[i]); //ラインセンサの値をシリアルモニタに表示
+    // Serial.print(" ");
   }
   data_ave[4] = 0;
   data_ave[8] = 0;
