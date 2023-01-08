@@ -229,10 +229,10 @@ void LINE::print(){
   Serial.print(Lvec_Dir); //ラインのベクトルを表示
   Serial.print(" 距離 : ");
   Serial.print(Lvec_Long); //ラインのベクトルを表示
-  Serial.print("  移動角度 : ");
-  Serial.print(Lvec_Dir_move); //ラインのベクトルを表示
-  Serial.print("  移動距離 : ");
-  Serial.print(Lvec_Long_move); //ラインのベクトルを表示
+  // Serial.print("  移動角度 : ");
+  // Serial.print(Lvec_Dir_move); //ラインのベクトルを表示
+  // Serial.print("  移動距離 : ");
+  // Serial.print(Lvec_Long_move); //ラインのベクトルを表示
 }
 
 
