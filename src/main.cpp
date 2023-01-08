@@ -151,6 +151,7 @@ void loop(){
     if(ball.far_x == 0 && ball.far_y == 0){
       int flag = 0;
       while(flag != 1){
+        ball.getBallposition();
         moter_0();
         ball.getBallposition();
         if(ball.far_x != 0 || ball.far_y != 0){
