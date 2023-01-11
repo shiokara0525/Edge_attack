@@ -3,22 +3,39 @@
 #include<line.h>
 #include<ac.h>
 #include<timer.h>
+/*--------------------------------------------------------------定数----------------------------------------------------------------------*/
+
+const int ena[4] = {28,2,0,4};
+const int pah[4] = {29,3,1,5};
+const int Tact_Switch = 15;
+const int toggle_Switch = 14;
+const double pi = 3.1415926535897932384;  //円周率
+
+/*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
 
 
-int A = 0;
-
-Ball ball;
+int A = 0;  //スイッチを押したらメインプログラムに移動できる変数
+Ball ball;  //ボールのクラスのオブジェクトを生成
+AC ac;  //姿勢制御のクラスのオブジェクトを生成
 LINE line;
-AC ac;
-timer timer_sawa;
+timer time_flame;
 
-/*---------------------------------------------------------------------------------------------------------------------------------------*/
-int line_A = 0; //ラインの変数AB
-int line_B = 999;
 
-int line_flag = 0; //ラインをどう踏んでるかを8分割して処理するやつ
-int line_flag_2 = 0; //ラインを斜めかまっすぐ踏んでるかのフラグ
+/*--------------------------------------------------------------モーター制御---------------------------------------------------------------*/
 
+
+void moter(double,double,int);  //モーター制御関数
+void moter_0();
+double val_max = 150;  //モーターの最大値
+int Mang[4] = {45,135,225,315};  //モーターの角度
+double mSin[4] = {1,1,-1,-1};  //行列式のsinの値
+double mCos[4] = {1,-1,-1,1};  //行列式のcosの値
+
+
+int A_line = 0;  //ライン踏んでるか踏んでないか
+int B_line = 999;  //前回踏んでるか踏んでないか
+
+int line_flag = 0;  //どんな風にラインの判定したか記録
 
 double line_target_x[9];
 double line_target_y[9];
@@ -28,18 +45,8 @@ double line_kp = 0.8;
 double line_kkp_x = 0;
 double line_kkp_y = 0; 
 
-void moter(double,int,double);
-/*---------------------------------------------------------------------------------------------------------------------------------------*/
-const int ena[4] = {28,2,0,4};
-const int pah[4] = {29,3,1,5};
+/*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
 
-const int val_max = 140;
-
-double mSin[4] = {1,1,-1,-1};  //行列式のsinの値
-double mCos[4] = {1,-1,-1,1};  //行列式のcosの値
-const int Tact_Switch = 15;
-
-void line_reset(int);
 
 void setup() {
   for(int i = 0; i < 4; i++){
@@ -105,131 +112,200 @@ void setup() {
 
 
 
-void loop() {
-  int line_on = line.getLINE_Vec();
-  double ac_val = ac.getAC_val();
-  ball.getBallposition();
+void loop(){
+  double AC_val = 100;  //姿勢制御の最終的な値を入れるグローバル変数
+  double goang = 0;  //進みたい角度
+  
+  int Line_flag = 0;  //ライン踏んでるか踏んでないか
+  int ball_flag = 0;
+  double line_dir = 0;
 
-  if(line_on == 0){
-    line_A = 0;
-    if(line_A != line_B){
-      line_flag = 0;
-      line_B = line_A;
+  if(A == 10){  //情報入手
+    ball_flag = ball.getBallposition();  //ボールの位置取得
+    AC_val = ac.getAC_val();             //姿勢制御の値入手
+    Line_flag = line.getLINE_Vec();      //ライン踏んでるか踏んでないかを判定
+    line_dir = line.Lvec_Dir + ac.dir;   //ラインを踏んでる角度を定義
+    if(ball_flag == 0){  //ボール見てなかったら
+      A = 15;  //止まるとこ
+    }
+    else{  //ボール見てたら
+      A = 20;  //進む角度決めるとこ
     }
   }
-  else if(line_on == 1){
-    line_A = 1;
-    if(line_A != line_B){
-      line_B = line_A;
-      line_old_ang = line.Lvec_Dir;
 
-      if(abs(line_old_ang) < 15){
-        line_flag = 1;
+  if(A == 15){
+    while(1){
+      moter_0();
+      ball.getBallposition();
+      if(ball.far_x != 0 || ball.far_y != 0){
+        break;
+      }
+    }
+    A = 30;
+  }
+
+  if(A == 20){
+    double ang_defference = 30 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
+
+    if(abs(ball.ang) < 90){
+      goang = ball.ang + (ball.ang * 0.5) * (1 + ang_defference);
+    }
+    else{
+      goang = ball.ang + (ball.ang * 0.3) * (1 + ang_defference);
+    }
+
+
+    if(270 < abs(goang)){
+      if(goang < 0){
+        goang = -270;
+      }
+      else{
+        goang = 270;
+      }
+    }
+    
+    if(abs(goang) > 180){
+      if(goang < 0){
+        goang += 360;
       }
       else if(165 < abs(line_old_ang)){
         line_flag = 2;
       }
-      else if(75 < abs(line_old_ang) && abs(line_old_ang) < 105){
-        if(line_old_ang < 0){
-          line_flag = 3;
-        }
-        else{
-          line_flag = 4;
-        }
-      }
-      else if(15 < abs(line_old_ang) && abs(line_old_ang) < 75){
-        if(line_old_ang < 0){
-          line_flag = 5;
-        }
-        else{
-          line_flag = 6;
-        }
-      }
-      else if(105 < abs(line_old_ang) && abs(line_old_ang) < 165){
-        if(line_old_ang < 0){
-          line_flag = 7;
-        }
-        else{
-          line_flag = 8;
-        }
-      }
-    }  //ここまでが初めて踏んだときに動くとこ(基本はこれ基準で動くぞ！言ったからな！)
+    }
+    A = 30;
+  }
+  
+  if(A == 30){  //ライン読むところ
+    if(Line_flag == 1){  //ラインがオンだったら
+      A_line = 1;
 
-    if(line_flag == 1){
-      if(15 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 75){
-        if(line.Lvec_Dir < 0){
-          line_flag = 5;
+      if(A_line != B_line){  //前回はライン踏んでなくて今回はライン踏んでるよ～ってとき(どういう風に動くか決めるよ!)
+        B_line = A_line;
+          if(60 < abs(line_dir) && abs(line_dir) < 120){  //真横にライン踏んでたら
+            if(goang < 0 && line_dir < 0){  //左方向でライン踏んでて左に進もうとしてたら
+              line_flag = 1;  //これはライン離れるまで同じ動きするための変数(ラインを通り越して左で踏んでたはずが右で踏んじゃった~みたいなことになったら困るから)
+            }
+            else if(goang > 0 && line_dir > 0){  //右方向でライン踏んでて右に進もうとしてたら
+              line_flag = 2;
+            }
+          }
+        else if(abs(line_dir) < 30){  //前でライン踏んでたら
+          if(abs(goang) < 90){  //前方向に進もうとしてたら
+            line_flag = 3;
+          }
         }
-        else{
-          line_flag = 6;
+        else if(abs(line_dir) > 150){  //後ろでライン踏んでたら
+          if(90 < abs(goang)){  //後ろ向きに進もうとしてたら
+            line_flag = 4;
+          }
+        }
+        else if(30 < abs(line_dir) && abs(line_dir) < 70){  //前斜め方向にラインあったら
+          if(line_dir < 0){  //左前斜め方向にラインあったら
+            if(-180 < goang && goang < 90){  //右後ろ以外に進もうとしてたら
+              line_flag = 5;
+            }
+          }
+          else{  //右前斜め方向にラインあったら
+            if(-90 < goang && goang < 180){  //左後ろ以外に進もうとしてたら
+              line_flag = 6;
+            }
+          }
+        }
+        else if(120 < abs(line_dir) && abs(line_dir) < 150){  //後ろ斜め方向にラインあったら
+          if(line_dir < 0){  //左後ろ斜めにラインあったら
+            if(goang < 0 || -90 < goang ){  //右前以外に進もうとしてたら
+              line_flag = 7;
+            }
+          }
+          else{  //右後ろ斜めにラインあったら
+            if(goang < -90 || 0 < goang){  //左前以外に進もうとしてたら
+              line_flag = 8;
+            }
+          }
         }
       }
-      else if(105 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 165){
-        if(line.Lvec_Dir < 0){
-          line_flag = 5;
+      else{  //連続でライン踏んでたら(踏んだまま斜めのとこ来て動き続けてたら怖いから斜めのとこ対策)
+      
+        if(line_flag == 1 || line_flag == 2 || line_flag == 3 || line_flag == 4){  //直線上を踏んでるときは斜めにいける可能性残したいよね
+          if(40 < abs(line_dir) && abs(line_dir) < 60){  //前斜め方向にラインあったら
+            if(line_dir < 0){  //左前斜め方向にラインあったら
+              if(-180 < goang && goang < 90){
+                line_flag = 5;
+              }
+            }
+            else{  //右前斜め方向にラインあったら
+              if(-90 < goang && goang < 180){
+                line_flag = 6;
+              }
+            }
+          }
+          else if(120 < abs(line_dir) && abs(line_dir) < 150){  //後ろ斜め方向にラインあったら
+            if(line_dir < 0){  //左後ろ斜めにラインあったら
+              if(45 < goang || goang < -135 ){
+                line_flag = 7;
+              }
+            }
+            else{  //右後ろ斜めにラインあったら
+              if(goang < -45 || 135 < goang ){
+                line_flag = 8;
+              }
+            }
+          }
         }
-        else{
-          line_flag = 6;
+
+
+        if(line_flag == 1 || line_flag == 2){
+          if(abs(line_dir) < 15){
+            line_flag = 3;
+          }
+          else if(abs(line_dir) > 165){
+            line_flag = 4;
+          }
         }
+        else if(line_flag == 3 || line_flag == 4){
+          if(60 < abs(line_dir) && abs(line_dir) < 120){  //真横にライン踏んでたら
+            if(goang < 0 && line_dir < 0){  //左方向でライン踏んでて左に進もうとしてたら
+              line_flag = 1;
+            }
+            else if(goang > 0 && line_dir > 0){  //右方向でライン踏んでて右に進もうとしてたら
+              line_flag = 2;
+            }
+          }
+        }
+      }
+      if(line_flag == 0){  //ライン踏んでるけど別に進んでいいよ～って時
+        B_line = 0;  //ラインで特に影響受けてないからライン踏んでないのと扱い同じのほうが都合いいよね!
       }
     }
-    else if(line_flag == 2){
-      if(15 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 75){
-        if(line.Lvec_Dir < 0){
-          line_flag = 7;
-        }
-        else{
-          line_flag = 8;
-        }
+    else if(Line_flag == 0){  //ラインを踏んでなかったら
+      A_line = 0;
+      if(A_line != B_line){  //前回までライン踏んでたら
+        B_line = A_line;  //今回はライン踏んでないよ
       }
-      else if(105 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 165){
-        if(line_old_ang < 0){
-          line_flag = 7;
-        }
-        else{
-          line_flag = 8;
-        }
-      }
+      line_flag = 0;
     }
-    else if(line_flag == 3){
-      if(15 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 75){
-        line_flag = 5;
-      }
-      else if(105 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 165){
-        line_flag = 7;
-      }
-    }
-    else if(line_flag == 4){
-      if(15 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 75){
-        line_flag = 6;
-      }
-      else if(105 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 165){
-        line_flag = 8;
-      }
+    A = 40;
+  }
+
+  if(A == 40){  //最終的に処理するとこ(モーターとかも) 
+    moter(goang,AC_val,line_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
+
+    A = 10;
+    Serial.println("");
+
+    if(digitalRead(Tact_Switch) == LOW){
+      A = 50; //スイッチから手が離されるのを待つ
     }
 
-    if(line_flag == 5){
-      if(abs(line.Lvec_Dir) < 15 || 165 < abs(line.Lvec_Dir)){
-        line_flag = 1;
-      }
-      else if(75 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 105){
-        line_flag = 3;
-      }
-    }
-    else if(line_flag == 6){
-      if(abs(line.Lvec_Dir) < 15 || 165 < abs(line.Lvec_Dir)){
-        line_flag = 1;
-      }
-      else if(75 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 105){
-        line_flag = 4;
-      }
-    }
-    else if(line_flag == 7){
-      if(abs(line.Lvec_Dir) < 15 || 165 < abs(line.Lvec_Dir)){
-        line_flag = 2;
-      }
-      else if(75 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 105){
-        line_flag = 3;
+  }
+  if(A == 50){
+    if(digitalRead(Tact_Switch) == HIGH){
+      delay(100);
+      A = 60;
+      digitalWrite(line.LINE_light,LOW);  //ラインの光止めるよ
+      for(int i = 0; i < 4; i++){  //モーター止めるよ
+        digitalWrite(pah[i],LOW);
+        analogWrite(ena[i],0);
       }
     }
     else if(line_flag == 8){
@@ -254,7 +330,7 @@ void loop() {
 
   line.print();
 
-  moter(-ball.ang,line_flag,ac_val);
+  moter(-ball.ang,line_flag,AC_val);
   Serial.println("");
 }
 

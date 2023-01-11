@@ -10,14 +10,13 @@ double AC::getAC_val(){  //姿勢制御の値返す関数
   bno.getEvent(&event);  //方向チェック
   
   dir = event.orientation.x - dir_target;  //現在の方向を取得
-  nowTime = millis();  //現在の時間を取得
   
   if(dir > 180){
     dir -= 360;  //方向を0~360から-180~180に変換
   }
 
   kkp = -dir;  //比例制御の値を計算
-  kkd = (dir - dir_old) / (nowTime - time_old);  //微分制御の値を計算
+  kkd = -(dir - dir_old);  //微分制御の値を計算
   
   val = kkp * kp + kkd * kd;  //最終的に返す値を計算
 
@@ -27,7 +26,6 @@ double AC::getAC_val(){  //姿勢制御の値返す関数
   
 
   dir_old = dir;  //前Fの方向を更新
-  time_old = nowTime;  //前Fの時間を更新
 
   return val;  //値返す
 }
