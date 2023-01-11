@@ -11,7 +11,7 @@ public:
   double ang;  //ボールまでの角度
   double far_x;
   double far_y;
-  void getBallposition();  //ボールの位置を取得
+  int getBallposition();  //ボールの位置を取得
   void print();  //ボールの距離と角度を表示
   void setup();  //セットアップ
 
@@ -27,4 +27,5 @@ private:
   const int sen_lowest = 200; //センサーがボールを見てないと判断する値
   const int ball_sen[16] ={
   9,10,11,12,13,34,35,36,37,38,39,40,41,6,7,8};
+  timer timer_ball;
 };
