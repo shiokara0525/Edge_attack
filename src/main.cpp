@@ -168,8 +168,8 @@ void loop(){
       if(goang < 0){
         goang += 360;
       }
-      else if(165 < abs(line_old_ang)){
-        line_flag = 2;
+      else{
+        goang -= 360;
       }
     }
     A = 30;
