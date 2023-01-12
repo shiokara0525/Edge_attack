@@ -28,7 +28,7 @@ timer time_flame;
 
 void moter(double,double,int);  //モーター制御関数
 void moter_0();
-double val_max = 150;  //モーターの最大値
+double val_max = 180;  //モーターの最大値
 int Mang[4] = {45,135,225,315};  //モーターの角度
 double mSin[4] = {1,1,-1,-1};  //行列式のsinの値
 double mCos[4] = {1,-1,-1,1};  //行列式のcosの値
@@ -126,14 +126,9 @@ void loop(){
   }
 
   if(A == 20){
-    double ang_defference = 30 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
+    double ang_defference = 60 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
 
-    if(abs(ball.ang) < 90){
-      goang = ball.ang + (ball.ang * 0.5) * (1 + ang_defference);
-    }
-    else{
-      goang = ball.ang + (ball.ang * 0.3) * (1 + ang_defference);
-    }
+    goang = ball.ang + (ball.ang * 0.3) * (1 + ang_defference);
 
 
     if(270 < abs(goang)){
@@ -162,7 +157,7 @@ void loop(){
 
       if(A_line != B_line){  //前回はライン踏んでなくて今回はライン踏んでるよ～ってとき(どういう風に動くか決めるよ!)
         B_line = A_line;
-          if(60 < abs(line_dir) && abs(line_dir) < 120){  //真横にライン踏んでたら
+        if(60 < abs(line_dir) && abs(line_dir) < 120){  //真横にライン踏んでたら
             if(goang < 0 && line_dir < 0){  //左方向でライン踏んでて左に進もうとしてたら
               line_flag = 1;  //これはライン離れるまで同じ動きするための変数(ラインを通り越して左で踏んでたはずが右で踏んじゃった~みたいなことになったら困るから)
             }
@@ -271,10 +266,6 @@ void loop(){
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
     moter(goang,AC_val,line_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
 
-    Serial.print(" 1F回すのにかかった時間 : ");
-    Serial.print(time_flame.read_us());
-    time_flame.reset();
-
     A = 10;
     Serial.println("");
 
@@ -300,8 +291,7 @@ void loop(){
   if(A == 70){
     digitalWrite(line.LINE_light,HIGH);  //ライン付けたよ
     if(digitalRead(Tact_Switch) == HIGH){
-      A = 80;  //準備オッケーだよ
-      
+      A = 80;  //準備オッケーだよ 
     }
   }
   if(A == 80){
