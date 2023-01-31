@@ -28,7 +28,7 @@ timer time_flame;
 
 void moter(double,double,int);  //モーター制御関数
 void moter_0();
-double val_max = 180;  //モーターの最大値
+double val_max = 100;  //モーターの最大値
 int Mang[4] = {45,135,225,315};  //モーターの角度
 double mSin[4] = {1,1,-1,-1};  //行列式のsinの値
 double mCos[4] = {1,-1,-1,1};  //行列式のcosの値
@@ -126,9 +126,11 @@ void loop(){
   }
 
   if(A == 20){
-    double ang_defference = 60 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
+    double ang_defference = 75.0 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
+    Serial.print(" 角度の差分 : ");
+    Serial.print(ang_defference);
 
-    goang = ball.ang + (ball.ang * 0.3) * (1 + ang_defference);
+    goang = ball.ang + (ball.ang<90 ? ball.ang*0.5 : 45) * (1.0 + ang_defference);
 
 
     if(270 < abs(goang)){

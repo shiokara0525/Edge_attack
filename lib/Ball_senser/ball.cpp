@@ -19,8 +19,8 @@ int Ball::getBallposition(){  //ボールの位置を極座標系で取得
   int low_cou = 0;    //一回ボールの値を集計して値がch_num以下だったセンサーの数
   double low_all = 0; //最新100回のボールの値を集計して値がch_num以下だったセンサーの数
 
-
-  for(int ch_cou = 0; ch_cou < ch_num; ch_cou++){   //ch_num回センサーの値を取得
+  timer_ball.reset();
+  while(timer_ball.read_us() < 833){
     for(int sen_num = 0; sen_num < 16; sen_num++){  //16個のセンサーの値を取得
 
       if(digitalReadFast(ball_sen[sen_num]) == 0){
@@ -55,7 +55,7 @@ int Ball::getBallposition(){  //ボールの位置を極座標系で取得
   ang = Bang;
   far_x = Bfar_x_all * 0.005;
   far_y = Bfar_y_all * 0.005;
-  Bfar = low_all * 0.05 * (100 / 16) - 15;
+  Bfar = sqrt(pow(far_x,2.0) + pow(far_y,2.0)) - 160;
   far = Bfar;
   if(far_x == 0 && far_y == 0){  //ボールを見失ったとき止まっとく
     return 0;
