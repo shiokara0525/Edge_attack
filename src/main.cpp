@@ -131,16 +131,6 @@ void loop(){
     Serial.print(ang_defference);
 
     goang = ball.ang + (ball.ang<90 ? ball.ang*0.5 : 45) * (1.0 + ang_defference);
-
-
-    if(270 < abs(goang)){
-      if(goang < 0){
-        goang = -270;
-      }
-      else{
-        goang = 270;
-      }
-    }
     
     if(abs(goang) > 180){
       if(goang < 0){
