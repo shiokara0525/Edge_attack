@@ -29,7 +29,7 @@ timer time_flame;
 
 void moter(double,int,double,int);  //モーター制御関数
 void moter_0();
-double val_max = 125;  //モーターの最大値
+double val_max = 110;  //モーターの最大値
 int Mang[] = {45,135,225,315};  //モーターの角度
 double mSin[] = {1,1,-1,-1};  //行列式のsinの値
 double mCos[] = {1,-1,-1,1};  //行列式のcosの値
@@ -133,18 +133,18 @@ void loop(){
     // Serial.print(" 角度の差分 : ");
     // Serial.print(ang_defference);
 
-    if(ball.ang < 0){
-      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (1.0 + ang_defference);  //ここに命かけてる
+    if(ball.ang < 0){  //ここで進む角度決めてるよ!
+      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (1.0 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
     else{
-      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (1.0 + ang_defference);  //ここに命かけてる
+      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (1.0 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
 
-    if(20 < abs(ball.ang) && abs(ball.ang) < 50){
-      goval -= 50;
+    if(20 < abs(ball.ang) && abs(ball.ang) < 50){  //ボールが斜め前にあったら進む速さちょっと落とすよ
+      goval -= 25;
     }
 
-    if(270 < abs(goang)){
+    if(270 < abs(goang)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
       if(goang < 0){
         goang = -270;
       }
@@ -153,7 +153,7 @@ void loop(){
       }
     }
     
-    while(180 < abs(goang)){
+    while(180 < abs(goang)){  //角度が180°を超えたらちょっとわかりづらいからわかりやすくするよ
       if(goang < 0){
         goang += 360;
       }
@@ -170,93 +170,35 @@ void loop(){
 
       if(A_line != B_line){  //前回はライン踏んでなくて今回はライン踏んでるよ～ってとき(どういう風に動くか決めるよ!)
         B_line = A_line;
-
-        if(60 < abs(line_dir) && abs(line_dir) < 120){  //真横にライン踏んでたら
-            if(goang_l < 0 && line_dir < 0){  //左方向でライン踏んでて左に進もうとしてたら
+        if(line.Lrange_num == 1){
+          if(60 < abs(line_dir) && abs(line_dir) < 120){  //真横にライン踏んでたら
+            if(goang < 0 && line_dir < 0){  //左方向でライン踏んでて左に進もうとしてたら
               line_flag = 1;  //これはライン離れるまで同じ動きするための変数(ラインを通り越して左で踏んでたはずが右で踏んじゃった~みたいなことになったら困るから)
             }
-            else if(goang_l > 0 && line_dir > 0){  //右方向でライン踏んでて右に進もうとしてたら
+            else if(goang > 0 && line_dir > 0){  //右方向でライン踏んでて右に進もうとしてたら
               line_flag = 2;
             }
           }
-        else if(abs(line_dir) < 30){  //前でライン踏んでたら
-          if(abs(goang_l) < 90){  //前方向に進もうとしてたら
-            line_flag = 3;
-          }
-        }
-        else if(abs(line_dir) > 150){  //後ろでライン踏んでたら
-          if(90 < abs(goang_l)){  //後ろ向きに進もうとしてたら
-            line_flag = 4;
-          }
-        }
-        else if(30 < abs(line_dir) && abs(line_dir) < 70){  //前斜め方向にラインあったら
-          if(line_dir < 0){  //左前斜め方向にラインあったら
-            if(-180 < goang_l && goang_l < 90){  //右後ろ以外に進もうとしてたら
-              line_flag = 5;
+          else if(abs(line_dir) < 30){  //前でライン踏んでたら
+            if(abs(goang) < 90){  //前方向に進もうとしてたら
+              line_flag = 3;
             }
           }
-          else{  //右前斜め方向にラインあったら
-            if(-90 < goang_l && goang_l < 180){  //左後ろ以外に進もうとしてたら
-              line_flag = 6;
+          else if(abs(line_dir) > 150){  //後ろでライン踏んでたら
+            if(90 < abs(goang)){  //後ろ向きに進もうとしてたら
+              line_flag = 4;
             }
           }
         }
-        else if(120 < abs(line_dir) && abs(line_dir) < 150){  //後ろ斜め方向にラインあったら
-          if(line_dir < 0){  //左後ろ斜めにラインあったら
-            if(goang_l < 0 || -90 < goang_l ){  //右前以外に進もうとしてたら
-              line_flag = 7;
-            }
-          }
-          else{  //右後ろ斜めにラインあったら
-            if(goang_l < -90 || 0 < goang_l){  //左前以外に進もうとしてたら
-              line_flag = 8;
-            }
-          }
+        else{  //ラインをまたいでいたらその真逆に進むよ
+          goang = line.Lvec_Dir - 180;
+          line_flag = 0;
         }
       }
       else{  //連続でライン踏んでたら(踏んだまま斜めのとこ来て動き続けてたら怖いから斜めのとこ対策)
-
-        if(line_flag <= 4){
-          if(40 < abs(line_dir) && abs(line_dir) < 60){  //前斜め方向にラインあったら
-            if(line_dir < 0){  //左前斜め方向にラインあったら
-              if(-180 < goang_l && goang_l < 90){
-                line_flag = 5;
-              }
-            }
-            else{  //右前斜め方向にラインあったら
-              if(-90 < goang_l && goang_l < 180){
-                line_flag = 6;
-              }
-            }
-          }
-          else if(120 < abs(line_dir) && abs(line_dir) < 150){  //後ろ斜め方向にラインあったら
-            if(line_dir < 0){  //左後ろ斜めにラインあったら
-              if(45 < goang_l || goang_l < -135 ){
-                line_flag = 7;
-              }
-            }
-            else{  //右後ろ斜めにラインあったら
-              if(goang_l < -45 || 135 < goang_l ){
-                line_flag = 8;
-              }
-            }
-          }
-        }
-        else if(5 <= line_flag){
-          if(line_flag % 2 == 1){
-            if(60 < abs(line_dir) && abs(line_dir) < 120){  //真横にライン踏んでたら
-              if(goang_l < 0){
-                line_flag = 1;
-              }
-            }
-          }
-          else{
-            if(60 < abs(line_dir) && abs(line_dir) < 120){  //真横にライン踏んでたら
-              if(0 <= goang_l){
-                line_flag = 2;
-              }
-            }            
-          }
+        if(1 < line.Lrange_num){  //ラインをまたいでいたらその真逆に動くよ
+          goang = line.Lvec_Dir - 180;
+          line_flag = 0;
         }
       }
       if(line_flag == 0){  //ライン踏んでるけど別に進んでいいよ～って時
@@ -270,7 +212,17 @@ void loop(){
       }
       line_flag = 0;
     }
+
+    while(180 < abs(goang)){
+      if(goang < 0){
+        goang += 360;
+      }
+      else{
+        goang -= 360;
+      }
+    }
     A = 40;
+
   }
 
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
