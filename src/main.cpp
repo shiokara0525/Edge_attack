@@ -34,7 +34,7 @@ int Mang[] = {45,135,225,315};  //モーターの角度
 double mSin[] = {1,1,-1,-1};  //行列式のsinの値
 double mCos[] = {1,-1,-1,1};  //行列式のcosの値
 
-double val_moter[4][10];
+double val_moter[4][5];
 int Mang_2[] = {135,225,315,45};
 int count_moter = 0;
 
@@ -103,6 +103,7 @@ void loop(){
   int ball_flag = 0;
   int goval = val_max;
   double line_dir = 0;
+  int line_flag_2 = 0;
 
   if(A == 10){  //情報入手
     ball_flag = ball.getBallposition();  //ボールの位置取得
@@ -171,22 +172,22 @@ void loop(){
       if(A_line != B_line){  //前回はライン踏んでなくて今回はライン踏んでるよ～ってとき(どういう風に動くか決めるよ!)
         B_line = A_line;
         if(line.Lrange_num == 1){
-          if(60 < abs(line_dir) && abs(line_dir) < 120){  //真横にライン踏んでたら
+          if(abs(line_dir) < 45){  //前でライン踏んでたら
+            if(abs(goang) < 90){  //前方向に進もうとしてたら
+              line_flag = 1;
+            }
+          }
+          else if(45 < abs(line_dir) && abs(line_dir) < 135){  //真横にライン踏んでたら
             if(goang < 0 && line_dir < 0){  //左方向でライン踏んでて左に進もうとしてたら
-              line_flag = 1;  //これはライン離れるまで同じ動きするための変数(ラインを通り越して左で踏んでたはずが右で踏んじゃった~みたいなことになったら困るから)
+              line_flag = 4;  //これはライン離れるまで同じ動きするための変数(ラインを通り越して左で踏んでたはずが右で踏んじゃった~みたいなことになったら困るから)
             }
             else if(goang > 0 && line_dir > 0){  //右方向でライン踏んでて右に進もうとしてたら
               line_flag = 2;
             }
           }
-          else if(abs(line_dir) < 30){  //前でライン踏んでたら
-            if(abs(goang) < 90){  //前方向に進もうとしてたら
-              line_flag = 3;
-            }
-          }
-          else if(abs(line_dir) > 150){  //後ろでライン踏んでたら
+          else if(abs(line_dir) > 135){  //後ろでライン踏んでたら
             if(90 < abs(goang)){  //後ろ向きに進もうとしてたら
-              line_flag = 4;
+              line_flag = 3;
             }
           }
         }
@@ -197,7 +198,88 @@ void loop(){
       }
       else{  //連続でライン踏んでたら(踏んだまま斜めのとこ来て動き続けてたら怖いから斜めのとこ対策)
         if(1 < line.Lrange_num){  //ラインをまたいでいたらその真逆に動くよ
-          goang = line.Lvec_Dir - 180;
+          if(abs(line.Lvec_Dir) < 15){
+            goang = 179;
+            if(line_flag == 3){
+              goang = 0;
+            }
+          }
+          else if(15 < line.Lvec_Dir && line.Lvec_Dir < 45){
+            if(line.Lvec_Dir < 0){
+              goang = 150;
+            }
+            else{
+              goang = -150;
+            }
+
+            if(line_flag == 3){
+              goang = 0;
+            }
+          }
+          else if(45 < line.Lvec_Dir && line.Lvec_Dir < 75){
+            if(line.Lvec_Dir < 0){
+              goang = -120;
+
+              if(line_flag == 4){
+                goang = 90;
+              }
+            }
+            else{
+              goang = 120;
+
+              if(line_flag == 2){
+                line_flag = -90;
+              }
+            }
+          }
+          else if(75 < line.Lvec_Dir && line.Lvec_Dir < 105){
+            if(line.Lvec_Dir < 0){
+              goang = 90;
+
+              if(line_flag == 4){
+                goang = -90;
+              }
+            }
+            else{
+              goang = -90;
+
+              if(line_flag == 2){
+                goang = 90;
+              }
+            }
+          }
+          else if(105 < line.Lvec_Dir && line.Lvec_Dir < 135){
+            if(line.Lvec_Dir < 0){
+              goang = 60;
+              if(line_flag == 4){
+                goang = -90;
+              }
+            }
+            else{
+              goang = -60;
+              if(line_flag == 2){
+                goang = 90;
+              }
+            }            
+          }
+          else if(135 < line.Lvec_Dir && line.Lvec_Dir < 165){
+            if(line.Lvec_Dir < 0){
+              goang = 30;
+            }
+            else{
+              goang = -30;
+            }
+
+            if(line_flag == 1){
+              goang = 179;
+            }  
+          }
+          else if(abs(line.Lvec_Dir) < 165){
+            goang = 0;
+            if(line_flag == 1){
+              goang = 179;
+            }  
+          }
           line_flag = 0;
         }
       }
@@ -295,17 +377,17 @@ void moter(double ang,int val,double ac_val,int go_flag){  //モーター制御�
       Mval[i] = -mSin[i] * mval_x + mCos[i] * mval_y; //モーターの回転速度を計算(行列式で管理)
     }
     
-    else if(go_flag == 1){  //左のストップかかってたら
-      Mval[i] = -mSin[i] * mval_x + mCos[i] * back_val;
+    else if(go_flag == 1){  //前のストップかかってたら
+      Mval[i] = mCos[i] * mval_y + -mSin[i] * -back_val;
     }
     else if(go_flag == 2){  //右のストップかかってたら
       Mval[i] = -mSin[i] * mval_x + mCos[i] * -back_val;
     }
-    else if(go_flag == 3){  //前のストップかかってたら
-      Mval[i] = mCos[i] * mval_y + -mSin[i] * -back_val;
-    }
-    else if(go_flag == 4){  //後ろのストップかかってたら
+    else if(go_flag == 3){  //後ろのストップかかってたら
       Mval[i] = mCos[i] * mval_y + -mSin[i] * back_val;
+    }
+    else if(go_flag == 4){  //左のストップかかってたら
+      Mval[i] = -mSin[i] * mval_x + mCos[i] * back_val;
     }
     else if(go_flag == 5){  //ストップ
       Mval[i] = -mSin[i] * -back_val + mCos[i] * back_val;
@@ -328,12 +410,12 @@ void moter(double ang,int val,double ac_val,int go_flag){  //モーター制御�
   for(int i = 0; i < 4; i++){
     Mval[i] /= g;
     Mval_n[i] = Mval[i];
-    val_moter[i][(count_moter % 10)] = Mval[i];
+    val_moter[i][(count_moter % 5)] = Mval[i];
     double valsum_moter = 0;
-    for(int j = 0; j < 10; j++){
+    for(int j = 0; j < 5; j++){
       valsum_moter += val_moter[i][j];
     }
-    Mval[i] = valsum_moter / 10;
+    Mval[i] = valsum_moter / 5;
     if(abs(Mval[i]) > h){  //絶対値が一番高い値だったら
       h = abs(Mval[i]);    //一番大きい値を代入
     }
