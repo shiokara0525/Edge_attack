@@ -4,45 +4,42 @@
 #include<ball.h>
 #include<line.h>
 #include<timer.h>
-/*--------------------------------------------------------------定数----------------------------------------------------------------------*/
 
-
-const int ena[4] = {28,2,0,4};
-const int pah[4] = {29,3,1,5};
-const int Tact_Switch = 15;
-const int toggle_Switch = 14;
-const double pi = 3.1415926535897932384;  //円周率
 
 /*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
 
 
-int A = 0;  //スイッチを押したらメインプログラムに移動できる変数
+int A = 0;  //どのチャプターに移動するかを決める変数
 
 int A_line = 0;  //ライン踏んでるか踏んでないか
 int B_line = 999;  //前回踏んでるか踏んでないか
 
-int line_flag = 0;  //どんな風にラインの判定したか記録
+//上二つの変数で上手い感じにこねくり回して最初に踏んだラインの位置を記録するよ(このやり方は部長に教えてもらったよ)
 
-Ball ball;  //ボールのクラスのオブジェクトを生成
-AC ac;  //姿勢制御のクラスのオブジェクトを生成
-LINE line;
+int line_flag = 0;               //最初にどんな風にラインの判定したか記録
+double line_switch(int,double);  //ラインを踏んでるときに、ロボットの中心から既にはみ出してしまってるときの対策の関数
+
+const int Tact_Switch = 15;  //スイッチのピン番号 
+const double pi = 3.1415926535897932384;  //円周率
+
+Ball ball;  //ボールのオブジェクトだよ(基本的にボールの位置取得は全部ここ)
+AC ac;      //姿勢制御のオブジェクトだよ(基本的に姿勢制御は全部ここ)
+LINE line;  //ラインのオブジェクトだよ(基本的にラインの判定は全部ここ)
 
 
 /*--------------------------------------------------------------モーター制御---------------------------------------------------------------*/
 
-
+const int ena[4] = {28,2,0,4};
+const int pah[4] = {29,3,1,5};
 void moter(double,int,double,int);  //モーター制御関数
 void moter_0();
-double val_max = 125;  //モーターの最大値
-int Mang[] = {45,135,225,315};  //モーターの角度
+double val_max = 110;  //モーターの最大値
 double mSin[] = {1,1,-1,-1};  //行列式のsinの値
 double mCos[] = {1,-1,-1,1};  //行列式のcosの値
 
-double val_moter[4][5];
-int count_moter = 0;
-
-
-
+#define moter_max 5  //移動平均で使う配列の大きさ
+double val_moter[4][moter_max];  //モーターの値を入れる配列(移動平均を使うために二次元にしてるよ)
+int count_moter = 0;  //移動平均でリングバッファを使うためのカウンターだよ
 
 /*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
 
@@ -53,8 +50,6 @@ void setup(){
   Serial.begin(9600);  //シリアルプリントできるよ
   Wire.begin();  //I2Cできるよ
   ball.setup();  //ボールとかのセットアップ
-  
-  
   
   for(int i = 0; i < 4; i++){
     pinMode(ena[i],OUTPUT);
@@ -101,7 +96,7 @@ void loop(){
   
   int Line_flag = 0;  //ライン踏んでるか踏んでないか
   int ball_flag = 0;  //ボールがコート上にあるかないか
-  int stop_flag = 0;  //ラインをちょっと踏んでるときにどんな動きをするかの旗 
+  int stop_flag = 0;  //ラインをちょっと踏んでるときにどんな動きをするかを決める変数
   int goval = val_max;  //動くスピード決定
 
   if(A == 10){  //情報入手
@@ -130,12 +125,16 @@ void loop(){
   if(A == 20){  //進む角度決めるとこ
     double ang_defference = 80.0 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
 
-    if(ball.ang < 0){  //ここで進む角度決めてるよ!
+    /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
+
+    if(ball.ang < 0){  //ここで進む角度決めてるよ!(ボールの角度が負の場合)
       goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (1.0 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
-    else{
+    else{  //(ボールの角度が正の場合)
       goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (1.0 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
+
+    /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
     if(20 < abs(ball.ang) && abs(ball.ang) < 50){  //ボールが斜め前にあったら進む速さちょっと落とすよ
       goval -= 25;
@@ -150,7 +149,7 @@ void loop(){
       }
     }
     
-    while(180 < abs(goang)){  //角度が180°を超えたらちょっとわかりづらいからわかりやすくするよ
+    while(180 < abs(goang)){  //角度がの絶対値が180°を超えたらちょっとわかりづらいからわかりやすくするよ
       if(goang < 0){
         goang += 360;
       }
@@ -158,132 +157,68 @@ void loop(){
         goang -= 360;
       }
     }
-    A = 30;
+    A = 30;  //次はライン読むよ!!
   }
   
   if(A == 30){  //ライン読むところ
     if(Line_flag == 1){  //ラインがオンだったら
       A_line = 1;
 
-      if(A_line != B_line){  //前回はライン踏んでなくて今回はライン踏んでるよ～ってとき(どういう風に動くか決めるよ!)
+      float line_dir = (line.Lvec_Dir < 0 ? line.Lvec_Dir + 360 : line.Lvec_Dir);  //ラインの方向を使いやすいように0~360°に変換してるよ 
+
+      if(A_line != B_line){  //前回はライン踏んでなくて今回はライン踏んでるよ～ってとき(ここはかなり重要!)
         B_line = A_line;
-        if(line.Lrange_num == 1){
-          if(abs(line.Lvec_Dir) < 45){  //前でライン踏んでたら
-            if(abs(goang) < 90){  //前方向に進もうとしてたら
-              line_flag = 1;
-              stop_flag = 1;
+
+        for(int i = 0; i < 4; i++){  //角度を四つに区分して、それぞれどの区分にいるか判定するよ
+          if(i == 0){  //-45°~45°の区分(ここだけ0°をまたいでいるので特別に処理)
+            if(315 < line_dir || line_dir < 45){  //-45°~45°にいるとき
+              line_flag = i + 1;  //ラインを前のほうで踏んでると判定する
             }
           }
-          else if(45 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 135){  //真横にライン踏んでたら
-            if(goang < 0 && line.Lvec_Dir < 0){  //左方向でライン踏んでて左に進もうとしてたら
-              line_flag = 4;  //これはライン離れるまで同じ動きするための変数(ラインを通り越して左で踏んでたはずが右で踏んじゃった~みたいなことになったら困るから)
-              stop_flag = 4;
-            }
-            else if(goang > 0 && line.Lvec_Dir > 0){  //右方向でライン踏んでて右に進もうとしてたら
-              line_flag = 2;
-              stop_flag = 2;
-            }
-          }
-          else if(abs(line.Lvec_Dir) > 135){  //後ろでライン踏んでたら
-            if(90 < abs(goang)){  //後ろ向きに進もうとしてたら
-              line_flag = 3;
-              stop_flag = 3;
+          else{
+            if(-45 +(i * 90) < line_dir && line_dir < 45 +(i * 90)){  //それ以外の三つの区分(右、後ろ、左で判定してるよ)
+              line_flag = i + 1;
             }
           }
         }
-        else{  //ラインをまたいでいたらその真逆に進むよ
-          goang = line.Lvec_Dir - 180;
-          stop_flag = 0;
+
+        if(line.Lrange_num == 1){  //ラインをちょっと踏んでるとき(ここでは緊急性が高くないとする)
+          stop_flag = line_flag;  //緊急性高くないし、まともにライン踏んでるから緩めの処理するよ
+        }
+        else{  //斜めに踏んでるか、またはラインをまたいでるとき(緊急性が高いとするよ,進む角度ごと変えるよ)
+          for(int i = 0; i < 12; i++){  //角度を12つに区分して、それぞれどの区分にいるか判定する
+
+            if(i == 0){  //-15°~15°の区分(ここだけ0°をまたいでいるので特別に処理)
+              if(345 < line_dir || line_dir < 15){
+                goang = line_switch(i,line_dir);  //ラインがロボットの中心を通り越すことがあるからそれも考慮してるよ(関数は下にあるよ)
+              }
+            }
+            else{
+              if(-15 +(i * 30) < line_dir && line_dir < 15 +(i * 30)){  //時計回りにどの区分にいるか判定してるよ
+                goang = line_switch(i,line_dir);
+              }
+            }
+          }
         }
       }
-      else{  //連続でライン踏んでたら(踏んだまま斜めのとこ来て動き続けてたら怖いから斜めのとこ対策)
+      else{  //連続でライン踏んでるとき
         if(1 < line.Lrange_num){  //ラインをまたいでいたらその真逆に動くよ
-          if(abs(line.Lvec_Dir) < 15){
-            goang = 179;
-            if(line_flag == 3){
-              goang = 0;
-            }
-          }
-          else if(15 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 45){
-            if(line.Lvec_Dir < 0){
-              goang = 150;
-            }
-            else{
-              goang = -150;
-            }
+          for(int i = 0; i < 12; i++){  //上の繰り返しだよ!!
 
-            if(line_flag == 3){
-              goang = 0;
-            }
-          }
-          else if(45 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 75){
-            if(line.Lvec_Dir < 0){
-              goang = -120;
-
-              if(line_flag == 4){
-                goang = 90;
+            if(i == 0){
+              if(345 < line_dir || line_dir < 15){
+                goang = line_switch(i,line_dir);
               }
             }
             else{
-              goang = 120;
-
-              if(line_flag == 2){
-                goang = -90;
+              if(-15 +(i * 30) < line_dir && line_dir < 15 +(i * 30)){
+                goang = line_switch(i,line_dir);
               }
             }
           }
-          else if(75 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 105){
-            if(line.Lvec_Dir < 0){
-              goang = 90;
-
-              if(line_flag == 2){
-                goang = -90;
-              }
-            }
-            else{
-              goang = -90;
-
-              if(line_flag == 4){
-                goang = 90;
-              }
-            }
-          }
-          else if(105 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 135){
-            if(line.Lvec_Dir < 0){
-              goang = 60;
-              if(line_flag == 2){
-                goang = -90;
-              }
-            }
-            else{
-              goang = -60;
-              if(line_flag == 4){
-                goang = 90;
-              }
-            }            
-          }
-          else if(135 < abs(line.Lvec_Dir) && abs(line.Lvec_Dir) < 165){
-            if(line.Lvec_Dir < 0){
-              goang = 30;
-            }
-            else{
-              goang = -30;
-            }
-
-            if(line_flag == 1){
-              goang = 179;
-            }  
-          }
-          else if(abs(line.Lvec_Dir) < 165){
-            goang = 0;
-            if(line_flag == 1){
-              goang = 179;
-            }  
-          }
-          stop_flag = 0;
         }
         else{
-          stop_flag = line_flag;
+          stop_flag = line_flag;  //ラインをちょっと踏んでるってことだから、変わらず処理するよ(緊急性低いよ)
         }
       }
       if(line_flag == 0){  //ライン踏んでるけど別に進んでいいよ～って時
@@ -295,16 +230,7 @@ void loop(){
       if(A_line != B_line){  //前回までライン踏んでたら
         B_line = A_line;  //今回はライン踏んでないよ
       }
-      line_flag = 0;
-    }
-
-    while(180 < abs(goang)){
-      if(goang < 0){
-        goang += 360;
-      }
-      else{
-        goang -= 360;
-      }
+      line_flag = 0;  //ラインを踏んでないときの処理に戻すよ
     }
     A = 40;
 
@@ -314,8 +240,7 @@ void loop(){
     moter(goang,goval,AC_val,stop_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
 
     A = 10;
-    Serial.print(" 進む角度 : ");
-    Serial.print(goang);
+    Serial.println();
 
 
     if(digitalRead(Tact_Switch) == LOW){
@@ -356,7 +281,40 @@ void loop(){
 }
 
 
-/*---------------------------------------------------------------モーター制御関数-----------------------------------------------------------*/
+/*----------------------------------------------------------------いろいろ関数-----------------------------------------------------------*/
+
+
+double line_switch(int i,double ang){  //ラインを踏みこしてるときの処理とか判定とか書いてあるよ
+  if(i == 11 || i <= 1){
+    if(line_flag == 3){
+      return 0.0;
+    }
+  }
+  else if(2 <= i && i <= 4){
+    if(line_flag == 4){
+      return 90.0;
+    }
+  }
+  else if(5 <= i && i <= 7){
+    if(line_flag == 1){
+      return 180.0;
+    }
+  }
+  else if(8 <= i && i <= 10){
+    if(line_flag == 2){
+      return -90.0;
+    }
+  }
+
+  double goang = (i * 30.0)- 180.0;
+
+  Serial.print(" 踏んだ角度 : ");
+  Serial.print(goang);
+
+  return goang;
+}
+
+
 
 
 void moter(double ang,int val,double ac_val,int go_flag){  //モーター制御する関数
@@ -396,28 +354,29 @@ void moter(double ang,int val,double ac_val,int go_flag){  //モーター制御�
     }
   }
 
-  for(int i = 0; i < 4; i++){
-    Mval[i] /= g;
-    Mval_n[i] = Mval[i];
-    val_moter[i][(count_moter % 5)] = Mval[i];
-    double valsum_moter = 0;
-    for(int j = 0; j < 5; j++){
-      valsum_moter += val_moter[i][j];
+  for(int i = 0; i < 4; i++){  //移動平均求めるゾーンだよ
+    Mval[i] /= g;  //モーターの値を制御(常に一番大きい値が1になるようにする)
+    Mval_n[i] = Mval[i];  //モーターの値を保存(ライン踏んでるときはこれ使うよ)
+    val_moter[i][(count_moter % moter_max)] = Mval[i];  //移動平均を求めるために値を配列に保存
+    double valsum_moter = 0;  //移動平均を求めて、その結果の値を保存する変数
+
+    for(int j = 0; j < moter_max; j++){
+      valsum_moter += val_moter[i][j];  //過去val_max個の値を足していく
     }
-    Mval[i] = valsum_moter / 5;
+
+    Mval[i] = valsum_moter / moter_max;  //平均を求めるために割るよ
+
     if(abs(Mval[i]) > h){  //絶対値が一番高い値だったら
       h = abs(Mval[i]);    //一番大きい値を代入
     }
   }
 
-  
-  for(int i = 0; i < 4; i++){
-
-    if(line_flag == 0){
+  for(int i = 0; i < 4; i++){  //モーターの値を計算するところだよ
+    if(go_flag == 0){  //ラインの処理してないとき
       Mval[i] = Mval[i] / h * max_val + ac_val;  //モーターの値を計算(進みたいベクトルの値と姿勢制御の値を合わせる)
     }
-    else{
-      Mval[i] = Mval_n[i] / h * max_val + ac_val;
+    else{  //ラインの処理してるとき
+      Mval[i] = Mval_n[i] / h * max_val + ac_val;  //移動平均無しバージョンでモーターの値を計算するよ
     }
 
     if(ac.flag == 1){
@@ -443,7 +402,7 @@ void moter(double ang,int val,double ac_val,int go_flag){  //モーター制御�
 
 
 
-void moter_0(){
+void moter_0(){  //モーターの値を0にする関数
   for(int i = 0; i < 4; i++){
     digitalWrite(pah[i],LOW);
     analogWrite(ena[i],0);
