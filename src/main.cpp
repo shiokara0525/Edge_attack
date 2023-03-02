@@ -103,7 +103,6 @@ void loop(){
   int ball_flag = 0;
   int goval = val_max;
   double line_dir = 0;
-  int line_flag_2 = 0;
 
   if(A == 10){  //情報入手
     ball_flag = ball.getBallposition();  //ボールの位置取得
