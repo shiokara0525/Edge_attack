@@ -22,18 +22,21 @@ double line_switch(int,double);  //ラインを踏んでるときに、ロボッ
 const int Tact_Switch = 15;  //スイッチのピン番号 
 const double pi = 3.1415926535897932384;  //円周率
 
+
+
 Ball ball;  //ボールのオブジェクトだよ(基本的にボールの位置取得は全部ここ)
 AC ac;      //姿勢制御のオブジェクトだよ(基本的に姿勢制御は全部ここ)
 LINE line;  //ラインのオブジェクトだよ(基本的にラインの判定は全部ここ)
+timer Timer;
 
 
 /*--------------------------------------------------------------モーター制御---------------------------------------------------------------*/
 
 const int ena[4] = {28,2,0,4};
 const int pah[4] = {29,3,1,5};
-void moter(double,int,double,int);  //モーター制御関数
-void moter_0();
-double val_max = 110;  //モーターの最大値
+void moter(double ang,int val,double ac_val,int stop_flag);  //モーター制御関数
+void moter_0();  //モーター止める関数
+double val_max = 110;  //モーターの出力の最大値
 double mSin[] = {1,1,-1,-1};  //行列式のsinの値
 double mCos[] = {1,-1,-1,1};  //行列式のcosの値
 
@@ -216,9 +219,22 @@ void loop(){
               }
             }
           }
+          stop_flag = 0;
         }
         else{
-          stop_flag = line_flag;  //ラインをちょっと踏んでるってことだから、変わらず処理するよ(緊急性低いよ)
+          for(int i = 0; i < 4; i++){  //角度を四つに区分して、それぞれどの区分にいるか判定するよ
+            if(i == 0){  //-45°~45°の区分(ここだけ0°をまたいでいるので特別に処理)
+              if(315 < line_dir || line_dir < 45){  //-45°~45°にいるとき
+                stop_flag = i + 1;  //ラインを前のほうで踏んでると判定する
+              }
+            }
+            else{
+              if(-45 +(i * 90) < line_dir && line_dir < 45 +(i * 90)){  //それ以外の三つの区分(右、後ろ、左で判定してるよ)
+                stop_flag = i + 1;
+              }
+            }
+          }
+          line_flag = stop_flag;
         }
       }
       if(line_flag == 0){  //ライン踏んでるけど別に進んでいいよ～って時
@@ -229,8 +245,17 @@ void loop(){
       A_line = 0;
       if(A_line != B_line){  //前回までライン踏んでたら
         B_line = A_line;  //今回はライン踏んでないよ
+        if(line_flag == 1){
+          Timer.reset();
+          while(abs(ball.ang) < 45){
+            ball.getBallposition();
+            moter_0();
+            if(2000 < Timer.read_ms()){
+              break;
+            }
+          }
+        }
       }
-      line_flag = 0;  //ラインを踏んでないときの処理に戻すよ
     }
     A = 40;
 
@@ -239,6 +264,9 @@ void loop(){
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
     moter(goang,goval,AC_val,stop_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
 
+    Serial.print(" ラインのフラグ : ");
+    Serial.print(line_flag);
+    line.print();
     A = 10;
     Serial.println();
 
@@ -347,6 +375,10 @@ void moter(double ang,int val,double ac_val,int go_flag){  //モーター制御�
     }
     else if(go_flag == 4){  //左のストップかかってたら
       Mval[i] = -mSin[i] * mval_x + mCos[i] * back_val;
+    }
+    else if(go_flag == 5){
+      moter_0();
+      return;
     }
     
     if(abs(Mval[i]) > g){  //絶対値が一番高い値だったら
