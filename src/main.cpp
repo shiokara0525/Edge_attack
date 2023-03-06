@@ -35,14 +35,14 @@ timer Timer;
 const int ena[4] = {28,2,0,4};
 const int pah[4] = {29,3,1,5};
 void moter(double ang,int val,double ac_val,int stop_flag);  //モーター制御関数
-void moter_0();  //モーター止める関数
-double val_max = 110;  //モーターの出力の最大値
+void moter_0();               //モーター止める関数
+double val_max = 110;         //モーターの出力の最大値
 double mSin[] = {1,1,-1,-1};  //行列式のsinの値
 double mCos[] = {1,-1,-1,1};  //行列式のcosの値
 
-#define moter_max 5  //移動平均で使う配列の大きさ
+#define moter_max 5              //移動平均で使う配列の大きさ
 double val_moter[4][moter_max];  //モーターの値を入れる配列(移動平均を使うために二次元にしてるよ)
-int count_moter = 0;  //移動平均でリングバッファを使うためのカウンターだよ
+int count_moter = 0;             //移動平均でリングバッファを使うためのカウンターだよ
 
 /*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
 
@@ -102,6 +102,7 @@ void loop(){
   int stop_flag = 0;  //ラインをちょっと踏んでるときにどんな動きをするかを決める変数
   int goval = val_max;  //動くスピード決定
 
+
   if(A == 10){  //情報入手
     ball_flag = ball.getBallposition();  //ボールの位置取得
     AC_val = ac.getAC_val();             //姿勢制御の値入手
@@ -114,6 +115,7 @@ void loop(){
     }
   }
 
+
   if(A == 15){
     while(1){
       moter_0();
@@ -125,8 +127,9 @@ void loop(){
     A = 30;
   }
 
+
   if(A == 20){  //進む角度決めるとこ
-    double ang_defference = 80.0 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
+    double ang_defference = 60.0 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
 
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
@@ -162,6 +165,7 @@ void loop(){
     }
     A = 30;  //次はライン読むよ!!
   }
+
   
   if(A == 30){  //ライン読むところ
     if(Line_flag == 1){  //ラインがオンだったら
@@ -173,9 +177,9 @@ void loop(){
         B_line = A_line;
 
         for(int i = 0; i < 4; i++){  //角度を四つに区分して、それぞれどの区分にいるか判定するよ
-          if(i == 0){  //-45°~45°の区分(ここだけ0°をまたいでいるので特別に処理)
+          if(i == 0){                //-45°~45°の区分(ここだけ0°をまたいでいるので特別に処理)
             if(315 < line_dir || line_dir < 45){  //-45°~45°にいるとき
-              line_flag = i + 1;  //ラインを前のほうで踏んでると判定する
+              line_flag = i + 1;                  //ラインを前のほうで踏んでると判定する
             }
           }
           else{
@@ -186,7 +190,7 @@ void loop(){
         }
 
         if(line.Lrange_num == 1){  //ラインをちょっと踏んでるとき(ここでは緊急性が高くないとする)
-          stop_flag = line_flag;  //緊急性高くないし、まともにライン踏んでるから緩めの処理するよ
+          stop_flag = line_flag;   //緊急性高くないし、まともにライン踏んでるから緩めの処理するよ
         }
         else{  //斜めに踏んでるか、またはラインをまたいでるとき(緊急性が高いとするよ,進む角度ごと変えるよ)
           for(int i = 0; i < 12; i++){  //角度を12つに区分して、それぞれどの区分にいるか判定する
@@ -256,17 +260,15 @@ void loop(){
           }
         }
       }
+      line_flag = 0;
     }
     A = 40;
-
   }
+
 
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
     moter(goang,goval,AC_val,stop_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
 
-    Serial.print(" ラインのフラグ : ");
-    Serial.print(line_flag);
-    line.print();
     A = 10;
     Serial.println();
 
@@ -276,6 +278,7 @@ void loop(){
     }
 
   }
+
   if(A == 50){
     if(digitalRead(Tact_Switch) == HIGH){
       delay(100);
@@ -284,23 +287,27 @@ void loop(){
       moter_0();
     }
   }
+
   if(A == 60){
     if(digitalRead(Tact_Switch) == LOW){
       ac.setup_2();  //姿勢制御の値リセットしたよ
       A = 70;
     }
   }
+
   if(A == 70){
     digitalWrite(line.LINE_light,HIGH);  //ライン付けたよ
     if(digitalRead(Tact_Switch) == HIGH){
       A = 80;  //準備オッケーだよ 
     }
   }
+
   if(A == 80){
     if(digitalRead(Tact_Switch) == LOW){
       A = 90;  //スイッチはなされたらいよいよスタートだよ
     }
   }
+  
   if(A == 90){
     if(digitalRead(Tact_Switch) == HIGH){
       A = 10;  //スタート!

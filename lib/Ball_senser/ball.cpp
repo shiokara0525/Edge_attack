@@ -55,7 +55,7 @@ int Ball::getBallposition(){  //ボールの位置を極座標系で取得
   ang = Bang;
   far_x = Bfar_x_all * 0.005;
   far_y = Bfar_y_all * 0.005;
-  Bfar = sqrt(pow(far_x,2.0) + pow(far_y,2.0)) - 160;
+  Bfar = sqrt(pow(far_x,2.0) + pow(far_y,2.0)) - 140;
   far = Bfar;
   if(far_x == 0 && far_y == 0){  //ボールを見失ったとき止まっとく
     return 0;
@@ -71,10 +71,6 @@ int Ball::getBallposition(){  //ボールの位置を極座標系で取得
 void Ball::print(){  //ボールの位置を表示
   Serial.print(" ボールの距離 : ");
   Serial.print(far);
-  // Serial.print(" ボールの距離のx成分 : ");
-  // Serial.print(far_x);
-  // Serial.print(" (y) : ");
-  // Serial.print(far_y);
   Serial.print(" ボールの角度 : ");
   Serial.print(ang);
 }
