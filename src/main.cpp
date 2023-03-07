@@ -32,11 +32,11 @@ timer Timer;
 
 /*--------------------------------------------------------------モーター制御---------------------------------------------------------------*/
 
-const int ena[4] = {28,2,0,4};
-const int pah[4] = {29,3,1,5};
+const int ena[4] = {0,2,4,28};
+const int pah[4] = {1,3,5,29};
 void moter(double ang,int val,double ac_val,int stop_flag);  //モーター制御関数
 void moter_0();               //モーター止める関数
-double val_max = 110;         //モーターの出力の最大値
+double val_max = 135;         //モーターの出力の最大値
 double mSin[] = {1,1,-1,-1};  //行列式のsinの値
 double mCos[] = {1,-1,-1,1};  //行列式のcosの値
 
@@ -129,15 +129,14 @@ void loop(){
 
 
   if(A == 20){  //進む角度決めるとこ
-    double ang_defference = 60.0 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
-
+    double ang_defference = 150.0 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
     if(ball.ang < 0){  //ここで進む角度決めてるよ!(ボールの角度が負の場合)
-      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (1.0 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
+      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
     else{  //(ボールの角度が正の場合)
-      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (1.0 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
+      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
 
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
@@ -207,6 +206,9 @@ void loop(){
             }
           }
         }
+
+        moter_0();
+        delay(50);
       }
       else{  //連続でライン踏んでるとき
         if(1 < line.Lrange_num){  //ラインをまたいでいたらその真逆に動くよ
@@ -270,6 +272,7 @@ void loop(){
     moter(goang,goval,AC_val,stop_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
 
     A = 10;
+    ball.print();
     Serial.println();
 
 
@@ -423,11 +426,11 @@ void moter(double ang,int val,double ac_val,int go_flag){  //モーター制御�
       analogWrite(ena[i],0);
     }
     else if(Mval[i] > 0){            //モーターの回転方向が正の時
-      digitalWrite(pah[i] , LOW);    //モーターの回転方向を正にする
+      digitalWrite(pah[i] , HIGH);    //モーターの回転方向を正にする
       analogWrite(ena[i] , Mval[i]); //モーターの回転速度を設定
     }
     else{  //モーターの回転方向が負の時
-      digitalWrite(pah[i] , HIGH);     //モーターの回転方向を負にする
+      digitalWrite(pah[i] , LOW);     //モーターの回転方向を負にする
       analogWrite(ena[i] , -Mval[i]);  //モーターの回転速度を設定
     }
   }
