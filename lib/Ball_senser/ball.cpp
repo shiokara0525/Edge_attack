@@ -11,6 +11,7 @@ int Ball::getBallposition(){  //ボールの位置を極座標系で取得
   double Bfar_x_all = 0;
   double Bfar = 0;  //グローバル変数に戻す前の変数(直接代入するのはは何となく不安)
   double Bang = 0;  //グローバル変数に戻す前の変数
+  int Bmax_num = 0;
   int Bval[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; //ボールの値
 
   double Bfar_x = 0; //ボールの距離のx成分
@@ -29,13 +30,19 @@ int Ball::getBallposition(){  //ボールの位置を極座標系で取得
 
     }
   }
+  int Bval_max = 0;
 
   for(int i = 0; i < 16; i++){   //値を集計するところ
     Bfar_x += Bval[i] * Cos[i];  //ボールの距離のx成分を抽出
     Bfar_y += Bval[i] * Sin[i];  //ボールの距離のy成分を抽出
-
-    if(Bval[i] < sen_lowest){
-      low_cou++;  //値がsen_lowest以下だったセンサーの数をカウント
+    if(Bval_max < Bval[i]){
+      Bval_max = Bval[i];
+    }
+  }
+  Bval_max -= 500;
+  for(int i = 0; i < 16; i++){
+    if(Bval[i] < Bval_max){
+      low_cou++;
     }
   }
 
@@ -55,7 +62,25 @@ int Ball::getBallposition(){  //ボールの位置を極座標系で取得
   ang = Bang;
   far_x = Bfar_x_all * 0.005;
   far_y = Bfar_y_all * 0.005;
-  Bfar = sqrt(pow(far_x,2.0) + pow(far_y,2.0)) - 140;
+  if(low_all < 140.0){
+    Bfar = 50;
+  }
+  else if(low_all < 150){
+    Bfar = 80;
+  }
+  else if(low_all < 170){
+    Bfar = 120;
+  }
+  else if(low_all < 180){
+    Bfar = 200;
+  }
+  else if(low_all < 200){
+    Bfar = 250;
+  }
+  else{
+    Bfar = 250;
+  }
+
   far = Bfar;
   if(far_x == 0 && far_y == 0){  //ボールを見失ったとき止まっとく
     return 0;
