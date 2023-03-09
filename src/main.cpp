@@ -36,7 +36,7 @@ const int ena[4] = {0,2,4,28};
 const int pah[4] = {1,3,5,29};
 void moter(double ang,int val,double ac_val,int stop_flag);  //モーター制御関数
 void moter_0();               //モーター止める関数
-double val_max = 135;         //モーターの出力の最大値
+double val_max = 110;         //モーターの出力の最大値
 double mSin[] = {1,1,-1,-1};  //行列式のsinの値
 double mCos[] = {1,-1,-1,1};  //行列式のcosの値
 
@@ -129,21 +129,18 @@ void loop(){
 
 
   if(A == 20){  //進む角度決めるとこ
-    double ang_defference = 130.0 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
+    double ang_defference = 80.0 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
     if(ball.ang < 0){  //ここで進む角度決めてるよ!(ボールの角度が負の場合)
-      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
+      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (0.3 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
     else{  //(ボールの角度が正の場合)
-      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
+      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (0.2 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
 
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
-    if(20 < abs(ball.ang) && abs(ball.ang) < 50){  //ボールが斜め前にあったら進む速さちょっと落とすよ
-      goval -= 25;
-    }
 
     if(270 < abs(goang)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
       if(goang < 0){
@@ -153,7 +150,11 @@ void loop(){
         goang = 270;
       }
     }
-    
+
+    if(abs(goang) < 45){
+      goval += 20;
+    }
+
     while(180 < abs(goang)){  //角度がの絶対値が180°を超えたらちょっとわかりづらいからわかりやすくするよ
       if(goang < 0){
         goang += 360;

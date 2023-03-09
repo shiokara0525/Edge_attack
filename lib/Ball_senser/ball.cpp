@@ -62,25 +62,10 @@ int Ball::getBallposition(){  //ボールの位置を極座標系で取得
   ang = Bang;
   far_x = Bfar_x_all * 0.005;
   far_y = Bfar_y_all * 0.005;
-  if(low_all < 140.0){
-    Bfar = 50;
+  Bfar = (2.5 * low_all) - 300;
+  if(Bfar < 40){
+    Bfar = 40;
   }
-  else if(low_all < 150){
-    Bfar = 80;
-  }
-  else if(low_all < 170){
-    Bfar = 120;
-  }
-  else if(low_all < 180){
-    Bfar = 200;
-  }
-  else if(low_all < 200){
-    Bfar = 250;
-  }
-  else{
-    Bfar = 250;
-  }
-
   far = Bfar;
   if(far_x == 0 && far_y == 0){  //ボールを見失ったとき止まっとく
     return 0;
