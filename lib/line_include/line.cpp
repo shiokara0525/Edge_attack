@@ -221,6 +221,78 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
 }
 
 
+int LINE::switchLineflag(float linedir){
+  int line_flag = 0;
+  for(int i = 0; i < 4; i++){  //角度を四つに区分して、それぞれどの区分にいるか判定するよ
+    if(i == 0){  //-45°~45°の区分(ここだけ0°をまたいでいるので特別に処理)
+      if(315 < linedir || linedir < 45){  //-45°~45°にいるとき
+        line_flag = i + 1;  //ラインを前のほうで踏んでると判定する
+      }
+    }
+    else{
+      if(-45 +(i * 90) < linedir && linedir < 45 +(i * 90)){  //それ以外の三つの区分(右、後ろ、左で判定してるよ)
+        line_flag = i + 1;
+      }
+    }
+  }
+  
+  return line_flag;
+}
+
+
+double line_switch(int,double,int);
+
+
+float LINE::decideGoang(float linedir,int line_flag){
+  float goang = 0;
+  
+  for(int i = 0; i < 12; i++){  //角度を12つに区分して、それぞれどの区分にいるか判定する
+
+    if(i == 0){  //-15°~15°の区分(ここだけ0°をまたいでいるので特別に処理)
+      if(345 < linedir || linedir < 15){
+        goang = line_switch(i,linedir,line_flag);  //ラインがロボットの中心を通り越すことがあるからそれも考慮してるよ(関数は下にあるよ)
+      }
+    }
+    else{
+      if(-15 +(i * 30) < linedir && linedir < 15 +(i * 30)){  //時計回りにどの区分にいるか判定してるよ
+        goang = line_switch(i,linedir,line_flag);
+      }
+    }
+  }
+  return goang;
+}
+
+
+double line_switch(int i,double ang,int line_flag){  //ラインを踏みこしてるときの処理とか判定とか書いてあるよ
+  if(i == 11 || i <= 1){
+    if(line_flag == 3){
+      return 0.0;
+    }
+  }
+  else if(2 <= i && i <= 4){
+    if(line_flag == 4){
+      return 90.0;
+    }
+  }
+  else if(5 <= i && i <= 7){
+    if(line_flag == 1){
+      return 180.0;
+    }
+  }
+  else if(8 <= i && i <= 10){
+    if(line_flag == 2){
+      return -90.0;
+    }
+  }
+
+  double goang = (i * 30.0)- 180.0;
+
+  Serial.print(" 踏んだ角度 : ");
+  Serial.print(goang);
+
+  return goang;
+}
+
 
 
 void LINE::print(){
@@ -228,15 +300,4 @@ void LINE::print(){
   Serial.print(Lvec_Dir); //ラインのベクトルを表示
   Serial.print(" 距離 : ");
   Serial.print(Lvec_Long); //ラインのベクトルを表示
-  // Serial.print("  移動角度 : ");
-  // Serial.print(Lvec_Dir_move); //ラインのベクトルを表示
-  // Serial.print("  移動距離 : ");
-  // Serial.print(Lvec_Long_move); //ラインのベクトルを表示
-}
-
-
-
-
-double LINE::Lvec_dir_output(){
-  return Lvec_Dir;
 }

@@ -9,7 +9,8 @@ public:
     int getLINE_Vec(); //ラインセンサのベクトル(距離,角度)を取得する関数
     void print();
     void setup();
-    double Lvec_dir_output();
+    int switchLineflag(float);
+    float decideGoang(float,int);
 
     double Lvec_Long; //ラインのベクトルの長さ
     double Lvec_Long_move; //ラインのベクトルの長さの移動量

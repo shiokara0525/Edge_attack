@@ -14,10 +14,13 @@ int A = 0;  //どのチャプターに移動するかを決める変数
 int A_line = 0;  //ライン踏んでるか踏んでないか
 int B_line = 999;  //前回踏んでるか踏んでないか
 
-//上二つの変数で上手い感じにこねくり回して最初に踏んだラインの位置を記録するよ(このやり方は部長に教えてもらったよ)
+//上二つの変数を上手い感じにこねくり回して最初に踏んだラインの位置を記録するよ(このやり方は部長に教えてもらったよ)
 
 int line_flag = 0;               //最初にどんな風にラインの判定したか記録
-double line_switch(int,double);  //ラインを踏んでるときに、ロボットの中心から既にはみ出してしまってるときの対策の関数
+double line_switch(int,double);  //ラインを踏んでるときに、ロボットの中心が既にラインからはみ出してしまってるときの対策の関数
+int line_flag_switch(int,float);
+
+double edge_flag = 0; //ラインの端にいたときにゴールさせる確率を上げるための変数だよ(なんもなかったら0,右の端だったら1,左だったら2)
 
 const int Tact_Switch = 15;  //スイッチのピン番号 
 const double pi = 3.1415926535897932384;  //円周率
@@ -36,7 +39,7 @@ const int ena[4] = {0,2,4,28};
 const int pah[4] = {1,3,5,29};
 void moter(double ang,int val,double ac_val,int stop_flag);  //モーター制御関数
 void moter_0();               //モーター止める関数
-double val_max = 110;         //モーターの出力の最大値
+double val_max = 125;         //モーターの出力の最大値
 double mSin[] = {1,1,-1,-1};  //行列式のsinの値
 double mCos[] = {1,-1,-1,1};  //行列式のcosの値
 
@@ -133,10 +136,10 @@ void loop(){
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
     if(ball.ang < 0){  //ここで進む角度決めてるよ!(ボールの角度が負の場合)
-      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (0.3 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
+      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (0.5 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
     else{  //(ボールの角度が正の場合)
-      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (0.2 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
+      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (0.5 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
 
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
@@ -151,8 +154,19 @@ void loop(){
       }
     }
 
-    if(abs(goang) < 45){
+    if(abs(goang) < 30){
       goval += 20;
+      if(Timer.read_ms() < 2500){
+        if(edge_flag == 1){
+          goang -= 15;
+        }
+        else if(edge_flag == 2){
+          goang += 15;
+        }
+      }
+      else{
+        edge_flag = 0;
+      }
     }
 
     while(180 < abs(goang)){  //角度がの絶対値が180°を超えたらちょっとわかりづらいからわかりやすくするよ
@@ -166,26 +180,27 @@ void loop(){
     A = 30;  //次はライン読むよ!!
   }
 
-  
+
   if(A == 30){  //ライン読むところ
     if(Line_flag == 1){  //ラインがオンだったら
       A_line = 1;
-
       float line_dir = (line.Lvec_Dir < 0 ? line.Lvec_Dir + 360 : line.Lvec_Dir);  //ラインの方向を使いやすいように0~360°に変換してるよ 
 
       if(A_line != B_line){  //前回はライン踏んでなくて今回はライン踏んでるよ～ってとき(ここはかなり重要!)
         B_line = A_line;
 
-        for(int i = 0; i < 4; i++){  //角度を四つに区分して、それぞれどの区分にいるか判定するよ
-          if(i == 0){                //-45°~45°の区分(ここだけ0°をまたいでいるので特別に処理)
-            if(315 < line_dir || line_dir < 45){  //-45°~45°にいるとき
-              line_flag = i + 1;                  //ラインを前のほうで踏んでると判定する
-            }
+        line_flag = line.switchLineflag(line_dir);
+
+        if(line_flag == 2){
+          if(ball.ang < 0){
+            Timer.reset();
+            edge_flag = 1;
           }
-          else{
-            if(-45 +(i * 90) < line_dir && line_dir < 45 +(i * 90)){  //それ以外の三つの区分(右、後ろ、左で判定してるよ)
-              line_flag = i + 1;
-            }
+        }
+        else if(line_flag == 4){
+          if(0 < ball.ang){
+            Timer.reset();
+            edge_flag = 2;
           }
         }
 
@@ -193,19 +208,7 @@ void loop(){
           stop_flag = line_flag;   //緊急性高くないし、まともにライン踏んでるから緩めの処理するよ
         }
         else{  //斜めに踏んでるか、またはラインをまたいでるとき(緊急性が高いとするよ,進む角度ごと変えるよ)
-          for(int i = 0; i < 12; i++){  //角度を12つに区分して、それぞれどの区分にいるか判定する
-
-            if(i == 0){  //-15°~15°の区分(ここだけ0°をまたいでいるので特別に処理)
-              if(345 < line_dir || line_dir < 15){
-                goang = line_switch(i,line_dir);  //ラインがロボットの中心を通り越すことがあるからそれも考慮してるよ(関数は下にあるよ)
-              }
-            }
-            else{
-              if(-15 +(i * 30) < line_dir && line_dir < 15 +(i * 30)){  //時計回りにどの区分にいるか判定してるよ
-                goang = line_switch(i,line_dir);
-              }
-            }
-          }
+          goang = line.decideGoang(line_dir,line_flag);
         }
 
         moter_0();
@@ -213,34 +216,11 @@ void loop(){
       }
       else{  //連続でライン踏んでるとき
         if(1 < line.Lrange_num){  //ラインをまたいでいたらその真逆に動くよ
-          for(int i = 0; i < 12; i++){  //上の繰り返しだよ!!
-
-            if(i == 0){
-              if(345 < line_dir || line_dir < 15){
-                goang = line_switch(i,line_dir);
-              }
-            }
-            else{
-              if(-15 +(i * 30) < line_dir && line_dir < 15 +(i * 30)){
-                goang = line_switch(i,line_dir);
-              }
-            }
-          }
+          goang = line.decideGoang(line_dir,line_flag);
           stop_flag = 0;
         }
         else{
-          for(int i = 0; i < 4; i++){  //角度を四つに区分して、それぞれどの区分にいるか判定するよ
-            if(i == 0){  //-45°~45°の区分(ここだけ0°をまたいでいるので特別に処理)
-              if(315 < line_dir || line_dir < 45){  //-45°~45°にいるとき
-                stop_flag = i + 1;  //ラインを前のほうで踏んでると判定する
-              }
-            }
-            else{
-              if(-45 +(i * 90) < line_dir && line_dir < 45 +(i * 90)){  //それ以外の三つの区分(右、後ろ、左で判定してるよ)
-                stop_flag = i + 1;
-              }
-            }
-          }
+          stop_flag = line.switchLineflag(line_dir);
           line_flag = stop_flag;
         }
       }
@@ -273,7 +253,6 @@ void loop(){
     moter(goang,goval,AC_val,stop_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
 
     A = 10;
-    ball.print();
     Serial.println();
 
 
@@ -321,37 +300,6 @@ void loop(){
 
 
 /*----------------------------------------------------------------いろいろ関数-----------------------------------------------------------*/
-
-
-double line_switch(int i,double ang){  //ラインを踏みこしてるときの処理とか判定とか書いてあるよ
-  if(i == 11 || i <= 1){
-    if(line_flag == 3){
-      return 0.0;
-    }
-  }
-  else if(2 <= i && i <= 4){
-    if(line_flag == 4){
-      return 90.0;
-    }
-  }
-  else if(5 <= i && i <= 7){
-    if(line_flag == 1){
-      return 180.0;
-    }
-  }
-  else if(8 <= i && i <= 10){
-    if(line_flag == 2){
-      return -90.0;
-    }
-  }
-
-  double goang = (i * 30.0)- 180.0;
-
-  Serial.print(" 踏んだ角度 : ");
-  Serial.print(goang);
-
-  return goang;
-}
 
 
 
