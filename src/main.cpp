@@ -17,15 +17,12 @@ int B_line = 999;  //前回踏んでるか踏んでないか
 //上二つの変数を上手い感じにこねくり回して最初に踏んだラインの位置を記録するよ(このやり方は部長に教えてもらったよ)
 
 int line_flag = 0;               //最初にどんな風にラインの判定したか記録
-double line_switch(int,double);  //ラインを踏んでるときに、ロボットの中心が既にラインからはみ出してしまってるときの対策の関数
-int line_flag_switch(int,float);
-
 double edge_flag = 0; //ラインの端にいたときにゴールさせる確率を上げるための変数だよ(なんもなかったら0,右の端だったら1,左だったら2)
 
 const int Tact_Switch = 15;  //スイッチのピン番号 
 const double pi = 3.1415926535897932384;  //円周率
 
-
+void Switch(int);
 
 Ball ball;  //ボールのオブジェクトだよ(基本的にボールの位置取得は全部ここ)
 AC ac;      //姿勢制御のオブジェクトだよ(基本的に姿勢制御は全部ここ)
@@ -62,35 +59,8 @@ void setup(){
     pinMode(pah[i],OUTPUT);
   }  //モーターのピンと行列式に使う定数の設定
   
-  while(A != 10){
-    if (A == 0){
-      A = 1; //スイッチが押されるのを待つ
-    }
-    else if(A == 1){
-      if(digitalRead(Tact_Switch) == LOW){
-        A = 2; //スイッチから手が離されるのを待つ
-      }
-    }
-    else if(A == 2){
-      if(digitalRead(Tact_Switch) == HIGH){  //手が離されたらその時点で正面方向決定
-        ball.setup();
-        ac.setup();  //正面方向決定(その他姿勢制御関連のセットアップ)
-        line.setup();  //ラインとかのセットアップ
-        delay(100);
-        A = 3;  //メインプログラムいけるよ
-      }
-    }
-    else if(A == 3){
-      if(digitalRead(Tact_Switch) == LOW){
-        A = 4; //スイッチから手が離されるのを待つ
-      }
-    }
-    else if(A == 4){
-      if(digitalRead(Tact_Switch) == HIGH){
-        A = 10; //スイッチから手が離されるのを待つ
-      }
-    }
-  }
+  Switch(1);
+  A = 10;
 }
 
 
@@ -144,16 +114,6 @@ void loop(){
 
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
-
-    if(270 < abs(goang)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
-      if(goang < 0){
-        goang = -270;
-      }
-      else{
-        goang = 270;
-      }
-    }
-
     if(abs(goang) < 30){
       goval += 20;
       if(Timer.read_ms() < 2500){
@@ -169,13 +129,12 @@ void loop(){
       }
     }
 
+    if(270 < abs(goang)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
+      goang = (goang < 0 ? -270 : 270);
+    }
+
     while(180 < abs(goang)){  //角度がの絶対値が180°を超えたらちょっとわかりづらいからわかりやすくするよ
-      if(goang < 0){
-        goang += 360;
-      }
-      else{
-        goang -= 360;
-      }
+      goang += (goang < 0 ? 360 : -360);
     }
     A = 30;  //次はライン読むよ!!
   }
@@ -232,6 +191,7 @@ void loop(){
       A_line = 0;
       if(A_line != B_line){  //前回までライン踏んでたら
         B_line = A_line;  //今回はライン踏んでないよ
+
         if(line_flag == 1){
           Timer.reset();
           while(abs(ball.ang) < 45){
@@ -242,6 +202,7 @@ void loop(){
             }
           }
         }
+        
       }
       line_flag = 0;
     }
@@ -252,49 +213,12 @@ void loop(){
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
     moter(goang,goval,AC_val,stop_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
 
-    A = 10;
     Serial.println();
 
-
     if(digitalRead(Tact_Switch) == LOW){
-      A = 50; //スイッチが押されたら
+      Switch(2);
     }
-
-  }
-
-  if(A == 50){
-    if(digitalRead(Tact_Switch) == HIGH){
-      delay(100);
-      A = 60;
-      digitalWrite(line.LINE_light,LOW);  //ラインの光止めるよ
-      moter_0();
-    }
-  }
-
-  if(A == 60){
-    if(digitalRead(Tact_Switch) == LOW){
-      ac.setup_2();  //姿勢制御の値リセットしたよ
-      A = 70;
-    }
-  }
-
-  if(A == 70){
-    digitalWrite(line.LINE_light,HIGH);  //ライン付けたよ
-    if(digitalRead(Tact_Switch) == HIGH){
-      A = 80;  //準備オッケーだよ 
-    }
-  }
-
-  if(A == 80){
-    if(digitalRead(Tact_Switch) == LOW){
-      A = 90;  //スイッチはなされたらいよいよスタートだよ
-    }
-  }
-  
-  if(A == 90){
-    if(digitalRead(Tact_Switch) == HIGH){
-      A = 10;  //スタート!
-    }
+    A = 10;
   }
 }
 
@@ -398,4 +322,61 @@ void moter_0(){  //モーターの値を0にする関数
     digitalWrite(pah[i],LOW);
     analogWrite(ena[i],0);
   }
+}
+
+
+
+
+void Switch(int flag){
+  int A = 0;
+  while(1){
+    if(A == 0){
+      if(flag == 2){
+        if(digitalRead(Tact_Switch) == HIGH){
+          delay(100);
+          digitalWrite(line.LINE_light,LOW);  //ラインの光止めるよ
+          moter_0();
+          A = 1;
+        }
+      }
+      else{
+        A = 1;
+      }
+    }
+
+    if(A == 1){
+      if(digitalRead(Tact_Switch) == LOW){
+        A = 2;
+      }
+    }
+
+    if(A == 2){
+      if(flag == 1){
+        ball.setup();
+        ac.setup();  //正面方向決定(その他姿勢制御関連のセットアップ)
+        line.setup();  //ラインとかのセットアップ
+      }
+      else{
+        ac.setup_2();  //姿勢制御の値リセットしたよ
+        digitalWrite(line.LINE_light,HIGH);  //ライン付けたよ
+      }
+      
+      if(digitalRead(Tact_Switch) == HIGH){
+        A = 3;  //準備オッケーだよ 
+      }
+    }
+
+    if(A == 3){
+      if(digitalRead(Tact_Switch) == LOW){
+        A = 4;  //スイッチはなされたらいよいよスタートだよ
+      }
+    }
+    
+    if(A == 4){
+      if(digitalRead(Tact_Switch) == HIGH){
+        break;
+      }
+    }
+  }
+  return;
 }
