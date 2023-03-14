@@ -4,6 +4,7 @@
 #include<ball.h>
 #include<line.h>
 #include<timer.h>
+#include<angle.h>
 
 
 /*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
@@ -16,7 +17,7 @@ int B_line = 999;  //前回踏んでるか踏んでないか
 
 //上二つの変数を上手い感じにこねくり回して最初に踏んだラインの位置を記録するよ(このやり方は部長に教えてもらったよ)
 
-int line_flag = 0;               //最初にどんな風にラインの判定したか記録
+int line_flag = 0;    //最初にどんな風にラインの判定したか記録
 double edge_flag = 0; //ラインの端にいたときにゴールさせる確率を上げるための変数だよ(なんもなかったら0,右の端だったら1,左だったら2)
 
 const int Tact_Switch = 15;  //スイッチのピン番号 
@@ -34,7 +35,7 @@ timer Timer;
 
 const int ena[4] = {0,2,4,28};
 const int pah[4] = {1,3,5,29};
-void moter(double ang,int val,double ac_val,int stop_flag);  //モーター制御関数
+void moter(angle ang,int val,double ac_val,int stop_flag);  //モーター制御関数
 void moter_0();               //モーター止める関数
 double val_max = 125;         //モーターの出力の最大値
 double mSin[] = {1,1,-1,-1};  //行列式のsinの値
@@ -68,7 +69,7 @@ void setup(){
 
 void loop(){
   double AC_val = 100;  //姿勢制御の最終的な値を入れるグローバル変数
-  double goang = 0;  //進みたい角度
+  angle go_ang(0,true);
   
   int Line_flag = 0;  //ライン踏んでるか踏んでないか
   int ball_flag = 0;  //ボールがコート上にあるかないか
@@ -92,7 +93,6 @@ void loop(){
   if(A == 15){
     while(1){
       moter_0();
-      ball.getBallposition();
       if(ball.far_x != 0 || ball.far_y != 0){
         break;
       }
@@ -106,22 +106,22 @@ void loop(){
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
     if(ball.ang < 0){  //ここで進む角度決めてるよ!(ボールの角度が負の場合)
-      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (0.5 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
+      go_ang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (0.5 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
     else{  //(ボールの角度が正の場合)
-      goang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (0.5 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
+      go_ang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (0.5 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
 
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
-    if(abs(goang) < 30){
+    if(abs(go_ang.degrees) < 30){
       goval += 20;
       if(Timer.read_ms() < 2500){
         if(edge_flag == 1){
-          goang -= 15;
+          go_ang -= 15;
         }
         else if(edge_flag == 2){
-          goang += 15;
+          go_ang += 15;
         }
       }
       else{
@@ -129,13 +129,12 @@ void loop(){
       }
     }
 
-    if(270 < abs(goang)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
-      goang = (goang < 0 ? -270 : 270);
+    if(270 < abs(go_ang.degrees)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
+      go_ang = (go_ang.degrees < 0 ? -270 : 270);
     }
 
-    while(180 < abs(goang)){  //角度がの絶対値が180°を超えたらちょっとわかりづらいからわかりやすくするよ
-      goang += (goang < 0 ? 360 : -360);
-    }
+    go_ang.to_range(180,true);
+
     A = 30;  //次はライン読むよ!!
   }
 
@@ -143,12 +142,13 @@ void loop(){
   if(A == 30){  //ライン読むところ
     if(Line_flag == 1){  //ラインがオンだったら
       A_line = 1;
-      float line_dir = (line.Lvec_Dir < 0 ? line.Lvec_Dir + 360 : line.Lvec_Dir);  //ラインの方向を使いやすいように0~360°に変換してるよ 
+      angle linedir(line.Lvec_Dir,true,360,true);
 
       if(A_line != B_line){  //前回はライン踏んでなくて今回はライン踏んでるよ～ってとき(ここはかなり重要!)
         B_line = A_line;
+        linedir.to_range(-45,false);
 
-        line_flag = line.switchLineflag(line_dir);
+        line_flag = line.switchLineflag(linedir.degrees);
 
         if(line_flag == 2){
           if(ball.ang < 0){
@@ -167,7 +167,8 @@ void loop(){
           stop_flag = line_flag;   //緊急性高くないし、まともにライン踏んでるから緩めの処理するよ
         }
         else{  //斜めに踏んでるか、またはラインをまたいでるとき(緊急性が高いとするよ,進む角度ごと変えるよ)
-          goang = line.decideGoang(line_dir,line_flag);
+          linedir.to_range(-15,false);
+          go_ang = line.decideGoang(linedir.degrees,line_flag);
         }
 
         moter_0();
@@ -175,11 +176,13 @@ void loop(){
       }
       else{  //連続でライン踏んでるとき
         if(1 < line.Lrange_num){  //ラインをまたいでいたらその真逆に動くよ
-          goang = line.decideGoang(line_dir,line_flag);
+          linedir.to_range(-15,false);
+          go_ang = line.decideGoang(linedir.degrees,line_flag);
           stop_flag = 0;
         }
         else{
-          stop_flag = line.switchLineflag(line_dir);
+          linedir.to_range(-45,false);
+          stop_flag = line.switchLineflag(linedir.degrees);
           line_flag = stop_flag;
         }
       }
@@ -195,14 +198,13 @@ void loop(){
         if(line_flag == 1){
           Timer.reset();
           while(abs(ball.ang) < 45){
-            ball.getBallposition();
             moter_0();
             if(2000 < Timer.read_ms()){
               break;
             }
           }
         }
-        
+
       }
       line_flag = 0;
     }
@@ -211,7 +213,7 @@ void loop(){
 
 
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
-    moter(goang,goval,AC_val,stop_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
+    moter(go_ang,goval,AC_val,stop_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
 
     Serial.println();
 
@@ -228,14 +230,14 @@ void loop(){
 
 
 
-void moter(double ang,int val,double ac_val,int go_flag){  //モーター制御する関数
+void moter(angle ang,int val,double ac_val,int go_flag){  //モーター制御する関数
   double g = 0;                //モーターの最終的に出る最終的な値の比の基準になる値
   double h = 0;
   double Mval[4] = {0,0,0,0};  //モーターの値×4
   double Mval_n[4] = {0,0,0,0};
   double max_val = val;        //モーターの値の上限値
-  double mval_x = cos(radians(ang));  //進みたいベクトルのx成分
-  double mval_y = sin(radians(ang));  //進みたいベクトルのy成分
+  double mval_x = cos(ang.radians);  //進みたいベクトルのx成分
+  double mval_y = sin(ang.radians);  //進みたいベクトルのy成分
   count_moter++;
 
   float back_val = 2;
@@ -318,6 +320,7 @@ void moter(double ang,int val,double ac_val,int go_flag){  //モーター制御�
 
 
 void moter_0(){  //モーターの値を0にする関数
+  ball.getBallposition();
   for(int i = 0; i < 4; i++){
     digitalWrite(pah[i],LOW);
     analogWrite(ena[i],0);
