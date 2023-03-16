@@ -58,14 +58,14 @@ double angle::to_range(double border,bool flag){
         max = border + 360;
     }
 
-    while(degrees < low){
-        degrees += 360;
+    while(this->degrees < low){
+       this->degrees += 360;
     }
 
-    while(max < degrees){
-        degrees -= 360;
+    while(max < this->degrees){
+        this->degrees -= 360;
     }
-    radians = radians(degrees);
+    radians = radians(this->degrees);
 
     return degrees;
 }
