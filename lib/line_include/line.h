@@ -2,15 +2,15 @@
 
 #include <timer.h>
 #include <Arduino.h>
-
+#include<angle.h>
 
 class LINE{
 public:
     int getLINE_Vec(); //ラインセンサのベクトル(距離,角度)を取得する関数
     void print();
     void setup();
-    int switchLineflag(float);
-    float decideGoang(float,int);
+    int switchLineflag(angle);
+    float decideGoang(angle,int);
 
     double Lvec_Long; //ラインのベクトルの長さ
     double Lvec_Long_move; //ラインのベクトルの長さの移動量

@@ -1,4 +1,5 @@
 #include<Arduino.h>
+#pragma once
 
 class angle{
     public:

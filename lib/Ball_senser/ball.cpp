@@ -60,8 +60,8 @@ int Ball::getBallposition(){  //ボールの位置を極座標系で取得
   Bang = degrees(atan2(Bfar_y,Bfar_x));    //ボールの角度を計算(atan2はラジアンで返すので角度に変換)  
 
   ang = Bang;
-  far_x = Bfar_x * 0.005;
-  far_y = Bfar_y * 0.005;
+  far_x = Bfar_x * 0.05;
+  far_y = Bfar_y * 0.05;
   Bfar = 200 - (sqrt(pow(Bfar_x,2.0) + pow(Bfar_y,2.0)) * 0.05);
   Bfar = (Bfar < 40 ? 40 : Bfar);
   far = Bfar;
