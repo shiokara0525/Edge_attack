@@ -18,6 +18,8 @@ public:
 
     int LINE_on; //ラインがロボットの下になかったら0,あったら1にする
     const int LINE_light = 27; //ラインセンサのLEDを光らせるかの制御をするためのピン
+    double Lvec_X = 0; //ラインセンサのX座標の和のベクトル
+    double Lvec_Y = 0; //ラインセンサのY座標の和のベクトル
 
 private:
     const int LINE_1 = 23; //ラインセンサIC1の出力を読み取るためのピン
