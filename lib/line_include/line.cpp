@@ -221,10 +221,10 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
 }
 
 
-int LINE::switchLineflag(float linedir){
+int LINE::switchLineflag(angle linedir){
   int line_flag = 0;
   for(int i = 0; i < 4; i++){  //角度を四つに区分して、それぞれどの区分にいるか判定するよ
-    if(-45 +(i * 90) < linedir && linedir < 45 +(i * 90)){  //それ以外の三つの区分(右、後ろ、左で判定してるよ)
+    if(-45 +(i * 90) < linedir.degrees && linedir.degrees < 45 +(i * 90)){  //それ以外の三つの区分(右、後ろ、左で判定してるよ)
       line_flag = i + 1;
     }
   }
@@ -236,12 +236,12 @@ int LINE::switchLineflag(float linedir){
 double line_switch(int,double,int);
 
 
-float LINE::decideGoang(float linedir,int line_flag){
+float LINE::decideGoang(angle linedir,int line_flag){
   float goang = 0;
   
   for(int i = 0; i < 12; i++){  //角度を12つに区分して、それぞれどの区分にいるか判定する
-    if(-15 +(i * 30) < linedir && linedir < 15 +(i * 30)){  //時計回りにどの区分にいるか判定してるよ
-      goang = line_switch(i,linedir,line_flag);
+    if(-15 +(i * 30) < linedir.degrees && linedir.degrees < 15 +(i * 30)){  //時計回りにどの区分にいるか判定してるよ
+      goang = line_switch(i,linedir.degrees,line_flag);
     }
   }
   
