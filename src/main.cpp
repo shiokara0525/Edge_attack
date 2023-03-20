@@ -23,23 +23,26 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define LOGO_HEIGHT   16
 #define LOGO_WIDTH    16
 
+int A_OLED = 0;
+int B_OLED = 999;  //ステート初期化のための変数
+int aa = 0;  //タクトスイッチのルーレット状態防止用変数
+
+int flash_OLED = 0;  //ディスプレイの中で白黒点滅させたいときにつかう
+int OLED_select = 1;  //スイッチが押されたときにどこを選択しているかを示す変数(この数字によって選択画面の表示が変化する)
+int Button_select = 0;  //スイッチが押されたときにどこを選択しているかを示す変数(この数字によってexitかnextかが決まる)
 
 /*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
 
 unsigned int address = 0x00;  //EEPROMのアドレス
 
-int aa = 0;  //タクトスイッチのルーレット状態防止用変数
-int A = 0;  //どのチャプターに移動するかを決める変数
-int B = 999;  //ステート初期化のための変数
+int A = 0;
 
 unsigned int RA_size = 0;  //回り込みの大きさを示す変数
 
 int A_line = 0;  //ライン踏んでるか踏んでないか
 int B_line = 999;  //前回踏んでるか踏んでないか
 
-int flash_OLED = 0;  //ディスプレイの中で白黒点滅させたいときにつかう
-int OLED_select = 1;  //スイッチが押されたときにどこを選択しているかを示す変数(この数字によって選択画面の表示が変化する)
-int Button_select = 0;  //スイッチが押されたときにどこを選択しているかを示す変数(この数字によってexitかnextかが決まる)
+
 
 //エンコーダの設定
 long oldPosition  = -999;  //エンコーダのオールドポジの初期化
@@ -347,6 +350,7 @@ void Switch(int flag){
 
 
 void OLED() {
+
   if(timer_OLED.read_ms() > 500) //0.5秒ごとに実行(OLEDにかかれてある文字を点滅させるときにこの周期で点滅させる)
   {
     if(flash_OLED == 0){
@@ -359,12 +363,12 @@ void OLED() {
   }
 
 
-  if(A == 0)  //メインメニュー
+  if(A_OLED == 0)  //メインメニュー
   {
-    if(A != B)  //ステートが変わったときのみ実行(初期化)
+    if(A_OLED != B_OLED)  //ステートが変わったときのみ実行(初期化)
     {
       OLED_select = 1;  //選択画面をデフォルトにする
-      B = A;
+      B_OLED = A_OLED;
     }
 
     //OLEDの初期化
@@ -413,7 +417,7 @@ void OLED() {
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          A = 10;  //その選択されているステートにレッツゴー
+          A_OLED = 10;  //その選択されているステートにレッツゴー
           aa = 0;
         }
       }
@@ -450,7 +454,7 @@ void OLED() {
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          A = 20;  //その選択されているステートにレッツゴー
+          A_OLED = 20;  //その選択されているステートにレッツゴー
           aa = 0;
         }
       }
@@ -487,7 +491,7 @@ void OLED() {
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          A = 30;  //その選択されているステートにレッツゴー
+          A_OLED = 30;  //その選択されているステートにレッツゴー
           aa = 0;
         }
       }
@@ -524,7 +528,7 @@ void OLED() {
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          A = 40;  //その選択されているステートにレッツゴー
+          A_OLED = 40;  //その選択されているステートにレッツゴー
           aa = 0;
         }
       }
@@ -561,7 +565,7 @@ void OLED() {
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          A = 50;  //その選択されているステートにレッツゴー
+          A_OLED = 50;  //その選択されているステートにレッツゴー
           aa = 0;
         }
       }
@@ -596,17 +600,17 @@ void OLED() {
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          A = 60;  //その選択されているステートにレッツゴー
+          A_OLED = 60;  //その選択されているステートにレッツゴー
           aa = 0;
         }
       }
     }
   }
-  else if(A == 10)  //START
+  else if(A_OLED == 10)  //START
   { //機体の中心となるコート上での0°の位置を決めるところ
-    if(A != B){  //ステートが変わったときのみ実行(初期化)
+    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
       Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B = A;
+      B_OLED = A_OLED;
     };
 
     //OLEDの初期化
@@ -664,21 +668,21 @@ void OLED() {
         if(Button_select == 0)  //nextが選択されていたら
         {
           /*******************************************************************************ここで角度を決定*/
-          A = 15;  //スタート画面に行く
+          A_OLED = 15;  //スタート画面に行く
         }
         else if(Button_select == 1)  //exitが選択されていたら
         {
-          A = 0;  //メニュー画面に戻る
+          A_OLED = 0;  //メニュー画面に戻る
         }
         aa = 0;
       }
     }
   }
-  else if(A == 15)  //ボタン押したらロボット動作開始
+  else if(A_OLED == 15)  //ボタン押したらロボット動作開始
   {
-    if(A != B){  //ステートが変わったときのみ実行(初期化)
+    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
       Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B = A;
+      B_OLED = A_OLED;
     };
 
     //OLEDの初期化
@@ -737,17 +741,18 @@ void OLED() {
         }
         else if(Button_select == 1)  //exitが選択されていたら
         {
-          A = 0;  //メニュー画面に戻る
+          A_OLED = 0;  //メニュー画面に戻る
         }
         aa = 0;
       }
     }
+
   }
-  else if(A == 20)  //Set Line
+  else if(A_OLED == 20)  //Set Line
   {
-    if(A != B){  //ステートが変わったときのみ実行(初期化)
+    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
       Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B = A;
+      B_OLED = A_OLED;
     };
 
     display.display();
@@ -796,16 +801,16 @@ void OLED() {
         address = 0x00;  //EEPROMのアドレスを0x00にする
         // line.LINE_Level = 700;  //初めにデータをセットしておかなければならない
         EEPROM.put(address, line.LINE_Level);  //EEPROMにラインの閾値を保存
-        A = 0;  //メニュー画面へ戻る
+        A_OLED = 0;  //メニュー画面へ戻る
         aa = 0;
       }
     }
   }
-  else if(A == 30)  //Check Line
+  else if(A_OLED == 30)  //Check Line
   {
-    if(A != B){  //ステートが変わったときのみ実行(初期化)
+    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
       Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B = A;
+      B_OLED = A_OLED;
     };
     
     display.display();
@@ -858,7 +863,7 @@ void OLED() {
       }
     }else{
       if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-        A = 0;  //メニュー画面へ戻る
+        A_OLED = 0;  //メニュー画面へ戻る
         aa = 0;
       }
     }
@@ -875,11 +880,11 @@ void OLED() {
     // display.setCursor(96,56);
     // display.println(Lgreen);
   }
-  else if(A == 40)  //Set RA
+  else if(A_OLED == 40)  //Set RA
   {
-    if(A != B){  //ステートが変わったときのみ実行(初期化)
+    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
       Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B = A;
+      B_OLED = A_OLED;
     };
 
     display.display();
@@ -929,16 +934,16 @@ void OLED() {
         address += sizeof(line.LINE_Level);  //アドレスを次の変数のアドレスにする
         RA_size = 80;  //初めにデータをセットしておかなければならない
         EEPROM.put(address, RA_size);  //EEPROMにボールの閾値を保存
-        A = 0;  //メニュー画面へ戻る
+        A_OLED = 0;  //メニュー画面へ戻る
         aa = 0;
       }
     }
   }
-  else if(A == 50)  //Check Ball
+  else if(A_OLED == 50)  //Check Ball
   {
-    if(A != B){  //ステートが変わったときのみ実行(初期化)
+    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
       Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B = A;
+      B_OLED = A_OLED;
     };
     ball.getBallposition();
 
@@ -992,16 +997,16 @@ void OLED() {
       }
     }else{
       if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-        A = 0;  //メニュー画面へ戻る
+        A_OLED = 0;  //メニュー画面へ戻る
         aa = 0;
       }
     }
   }
-  else if(A == 60)  //Set Motar
+  else if(A_OLED == 60)  //Set Motar
   {
-    if(A != B){  //ステートが変わったときのみ実行(初期化)
+    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
       Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B = A;
+      B_OLED = A_OLED;
     };
 
     display.display();
@@ -1051,7 +1056,7 @@ void OLED() {
         address = sizeof(line.LINE_Level) + sizeof(RA_size);  //アドレスを次の変数のアドレスにする
         // val_max = 100;  //初めにデータをセットしておかなければならない
         EEPROM.put(address, val_max);  //EEPROMにボールの閾値を保存
-        A = 0;  //メニュー画面へ戻る
+        A_OLED = 0;  //メニュー画面へ戻る
         aa = 0;
       }
     }
@@ -1064,7 +1069,7 @@ void OLED() {
     if(newPosition % 4 == 0)  //4の倍数のときのみ実行
     {
       new_encVal = newPosition / 4;  //Aにステートを代入
-      if(A == 0)  //選択画面にいるときはOLED_selectを変更する
+      if(A_OLED == 0)  //選択画面にいるときはOLED_selectを変更する
       {
         if(new_encVal > old_encVal)  //回転方向を判定
         {
@@ -1075,7 +1080,7 @@ void OLED() {
           }
         }
       }
-      else if(A == 10 || A == 15)  //スタート画面にいるときはButton_selectを変更する
+      else if(A_OLED == 10 || A_OLED == 15)  //スタート画面にいるときはButton_selectを変更する
       {
         if(new_encVal > old_encVal)  //回転方向を判定
         {
@@ -1086,7 +1091,7 @@ void OLED() {
           Button_select = 1;  //exit
         }
       }
-      else if(A == 20)  //ラインの閾値を変更する
+      else if(A_OLED == 20)  //ラインの閾値を変更する
       {
         if(new_encVal > old_encVal)  //回転方向を判定
         {
@@ -1103,7 +1108,7 @@ void OLED() {
           }
         }
       }
-      else if(A == 40)  //ボールの閾値を変更する
+      else if(A_OLED == 40)  //ボールの閾値を変更する
       {
         if(new_encVal > old_encVal)  //回転方向を判定
         {
@@ -1120,7 +1125,7 @@ void OLED() {
           }
         }
       }
-      else if(A == 60)  //モーターの出力を変更する
+      else if(A_OLED == 60)  //モーターの出力を変更する
       {
         if(new_encVal > old_encVal)  //回転方向を判定
         {
