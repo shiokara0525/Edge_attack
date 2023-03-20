@@ -67,7 +67,7 @@ int readUS(){
   //cmに変換
   cm = int(duration/29); 
 
-  delay(10);
+  delayMicroseconds(100);
   return cm;
 }
 
