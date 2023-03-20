@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <timer.h>
+#include<MA.h>
 
 #define MAX 20
 
@@ -29,4 +30,6 @@ private:
   const int ball_sen[16] ={
   9,10,11,12,13,34,35,36,37,38,39,40,41,6,7,8};
   timer timer_ball;
+  MA ball_x;
+  MA ball_y;
 };

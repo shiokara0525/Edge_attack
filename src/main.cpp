@@ -27,9 +27,9 @@ const double pi = 3.1415926535897932384;  //円周率
 
 void Switch(int);
 
-int val_max = 140;
+int val_max = 150;
 
-Ball ball;  //ボールのオブジェクトだよ(基本的にボールの位置取得は全部ここ)
+Ball ball;  //ボールのオブジクトだよ(基本的にボールの位置取得は全部ここ)
 AC ac;      //姿勢制御のオブジェクトだよ(基本的に姿勢制御は全部ここ)
 LINE line;  //ラインのオブジェクトだよ(基本的にラインの判定は全部ここ)
 moter MOTER;
@@ -44,7 +44,7 @@ void setup(){
   Serial.begin(9600);  //シリアルプリントできるよ
   Wire.begin();  //I2Cできるよ
   ball.setup();  //ボールとかのセットアップ
-  
+
   Switch(1);
   A = 10;
 }
@@ -78,6 +78,7 @@ void loop(){
   if(A == 15){
     while(1){
       MOTER.moter_0();
+      ball.getBallposition();
       if(ball.far_x != 0 || ball.far_y != 0){
         break;
       }
@@ -87,7 +88,7 @@ void loop(){
 
 
   if(A == 20){  //進む角度決めるとこ
-    double ang_defference = 60.0 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
+    double ang_defference = 75.0 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
     if(ball.ang < 0){  //ここで進む角度決めてるよ!(ボールの角度が負の場合)
@@ -260,7 +261,6 @@ void Switch(int flag){
 
     if(A == 2){
       if(flag == 1){
-        ball.setup();
         ac.setup();  //正面方向決定(その他姿勢制御関連のセットアップ)
         line.setup();  //ラインとかのセットアップ
       }
