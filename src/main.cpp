@@ -27,7 +27,7 @@ const double pi = 3.1415926535897932384;  //円周率
 
 void Switch(int);
 
-int val_max = 150;
+int val_max = 100;
 
 Ball ball;  //ボールのオブジクトだよ(基本的にボールの位置取得は全部ここ)
 AC ac;      //姿勢制御のオブジェクトだよ(基本的に姿勢制御は全部ここ)
@@ -220,7 +220,9 @@ void loop(){
 
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
     MOTER.moveMoter(go_ang,goval,AC_val,stop_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
-    ball.print();
+    line.print();
+    Serial.print(" ねこ ");
+    Serial.print(Line_flag);
     Serial.println();
 
     if(digitalRead(Tact_Switch) == LOW){

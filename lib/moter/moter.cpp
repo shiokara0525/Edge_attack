@@ -75,6 +75,8 @@ void moter::moveMoter(angle ang,int val,double ac_val,int go_flag){  //モータ
       analogWrite(ena[i] , -Mval[i]);  //モーターの回転速度を設定
     }
   }
+  Serial.print("進む角度 : ");
+  Serial.print(degrees(atan2((Mval[1] - Mval[2])/ 2,(Mval[1] + Mval[2]) * -1)));
 }
 
 
