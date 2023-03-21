@@ -32,6 +32,7 @@ void loop(){
   Timer.reset();
   length = US.demandAve(readUS());
   Long = Timer.read_ms();
+  Serial.print("  ");
   Serial.print(length);
   Serial.print("cm  ");
   Serial.print(Long);
@@ -60,12 +61,16 @@ int readUS(){
   //入力パルスを読み取るためにデジタルピンをINPUTに変更（シグナルピンを入力に切り替え）
   pinMode(pingPin, INPUT);
   //入力パルスの長さを測定
-  duration = pulseIn(pingPin, HIGH);
+  duration = pulseIn(pingPin, HIGH,6000);
+  Serial.print(duration);
 
-  //パルスの長さを半分に分割
+  //パルスの長さを半分に分
   duration=duration/2;
   //cmに変換
   cm = int(duration/29); 
+  if(cm == 0){
+    cm = 100;
+  }
 
   delayMicroseconds(100);
   return cm;
