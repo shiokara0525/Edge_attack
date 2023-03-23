@@ -87,14 +87,6 @@ void setup(){
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
   }
-
-  //OLEDの初期化
-  display.display();
-  display.clearDisplay();
-  line.setup();
-
-  timer_OLED.reset(); //タイマーのリセット(OLED用)
-  toogle = digitalRead(Toggle_Switch);
   OLED();
   A = 10;
 }
@@ -285,6 +277,13 @@ void loop(){
 /*----------------------------------------------------------------いろいろ関数-----------------------------------------------------------*/
 
 void OLED() {
+  //OLEDの初期化
+  display.display();
+  display.clearDisplay();
+
+  timer_OLED.reset(); //タイマーのリセット(OLED用)
+  toogle = digitalRead(Toggle_Switch);
+
   int A_OLED = 0;
   int B_OLED = 999;  //ステート初期化のための変数
   int aa = 0;  //タクトスイッチのルーレット状態防止用変数
@@ -292,7 +291,7 @@ void OLED() {
   int flash_OLED = 0;  //ディスプレイの中で白黒点滅させたいときにつかう
   int OLED_select = 1;  //スイッチが押されたときにどこを選択しているかを示す変数(この数字によって選択画面の表示が変化する)
   int Button_select = 0;  //スイッチが押されたときにどこを選択しているかを示す変数(この数字によってexitかnextかが決まる)
-  
+
   int OLED_ball_x = 0;
   int OLED_ball_y = 0;
 
