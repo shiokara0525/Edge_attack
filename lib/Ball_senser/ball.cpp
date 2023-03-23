@@ -61,11 +61,12 @@ int Ball::getBallposition(){  //ボールの位置を極座標系で取得
   Bfar = (Bfar < 40 ? 40 : Bfar);
   far = Bfar;
   if(far_x == 0 && far_y == 0){  //ボールを見失ったとき止まっとく
-    return 0;
+    flag = 0;
   }
   else{  //ボールを見てたら返り値
-    return 1;
+    flag = 1;
   }
+  return flag;
 }
 
 

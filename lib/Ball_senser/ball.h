@@ -16,6 +16,7 @@ public:
   int getBallposition();  //ボールの位置を取得
   void print();  //ボールの距離と角度を表示
   void setup();  //セットアップ
+  int flag = 0;
 
 private:
   int cou = 0;  //ボールを見た回数(getBallpositionに入った回数をカウントするやつ)
