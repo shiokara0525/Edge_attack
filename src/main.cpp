@@ -56,6 +56,7 @@ int edge_flag = 0; //ラインの端にいたときにゴールさせる確率�
 int side_flag = 0;
 
 const int Tact_Switch = 15;  //スイッチのピン番号 
+const int Toggle_Switch = 14;  //スイッチのピン番号
 const int Encoder_A = 17;  //エンコーダーのピン番号
 const int Encoder_B = 16;  //エンコーダーのピン番号
 Encoder myEnc(17, 16);  //エンコーダのピン番号
@@ -96,6 +97,7 @@ void setup(){
   //OLEDの初期化
   display.display();
   display.clearDisplay();
+  line.setup();
 
   timer_OLED.reset(); //タイマーのリセット(OLED用)
   
@@ -350,65 +352,401 @@ void Switch(int flag){
 
 
 void OLED() {
+  int OLED_ball_x = 0;
+  int OLED_ball_y = 0;
 
-  if(timer_OLED.read_ms() > 500) //0.5秒ごとに実行(OLEDにかかれてある文字を点滅させるときにこの周期で点滅させる)
-  {
-    if(flash_OLED == 0){
-      flash_OLED = 1;
-    }
-    else{
-      flash_OLED = 0;
-    }
-    timer_OLED.reset(); //タイマーのリセット(OLED用)
-  }
+  int line_x = 0;
+  int line_y = 0;
+  int OLED_line_x = 0;
+  int OLED_line_y = 0;
+  int OLED_line_ax = 0;
+  int OLED_line_ay = 0;
+  int OLED_line_bx = 0;
+  int OLED_line_by = 0;
+  float b = 0;
+  float al = 0;
+  float bl = 0;
+  float cl = 0;
 
 
-  if(A_OLED == 0)  //メインメニュー
-  {
-    if(A_OLED != B_OLED)  //ステートが変わったときのみ実行(初期化)
+  while(1){
+    if(timer_OLED.read_ms() > 500) //0.5秒ごとに実行(OLEDにかかれてある文字を点滅させるときにこの周期で点滅させる)
     {
-      OLED_select = 1;  //選択画面をデフォルトにする
-      B_OLED = A_OLED;
-    }
-
-    //OLEDの初期化
-    display.display();
-    display.clearDisplay();
-
-    //選択画面だということをしらせる言葉を表示
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-    display.setCursor(0,0);
-    display.println("Hi! bro!");
-    display.setCursor(0,10);
-    display.println("What's up?");
-
-    //文字と選択画面の境目の横線を表示
-    display.drawLine(0, 21, 128, 21, WHITE);
-
-    //選択画面の表示
-    if(OLED_select == 1)  //STARTを選択しているとき
-    {
-      //START値を調整
-      display.setTextSize(2);
-      if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-        display.setTextColor(BLACK, WHITE);
+      if(flash_OLED == 0){
+        flash_OLED = 1;
       }
       else{
-        display.setTextColor(WHITE);
+        flash_OLED = 0;
       }
-      display.setCursor(0,35);
+      timer_OLED.reset(); //タイマーのリセット(OLED用)
+    }
+
+
+    if(A_OLED == 0)  //メインメニュー
+    {
+      if(A_OLED != B_OLED)  //ステートが変わったときのみ実行(初期化)
+      {
+        OLED_select = 1;  //選択画面をデフォルトにする
+        B_OLED = A_OLED;
+      }
+
+      //OLEDの初期化
+      display.display();
+      display.clearDisplay();
+
+      //選択画面だということをしらせる言葉を表示
+      display.setTextSize(1);
+      display.setTextColor(WHITE);
+      display.setCursor(0,0);
+      display.println("Hi! bro!");
+      display.setCursor(0,10);
+      display.println("What's up?");
+
+      //文字と選択画面の境目の横線を表示
+      display.drawLine(0, 21, 128, 21, WHITE);
+
+      //選択画面の表示
+      if(OLED_select == 1)  //STARTを選択しているとき
+      {
+        //START値を調整
+        display.setTextSize(2);
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+        display.setCursor(0,35);
+        display.println("START");
+
+        //選択画面で矢印マークを中央に表示
+        display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
+
+        display.setTextSize(1);
+        display.setTextColor(WHITE);
+        display.setCursor(90,35);
+        display.println("Set");
+        display.setCursor(88,45);
+        display.println("Line");
+
+        //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+        if(aa == 0){
+          if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
+            aa = 1;
+          }
+        }else{
+          if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
+            A_OLED = 10;  //その選択されているステートにレッツゴー
+            aa = 0;
+          }
+        }
+      }
+      else if(OLED_select == 2)  //Set Lineを選択しているとき
+      {
+        //Line値を調整
+        display.setTextSize(2);
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+        display.setCursor(12,27);
+        display.println("Set");
+        display.setCursor(6,44);
+        display.println("Line");
+
+        //選択画面で矢印マークを中央に表示
+        display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
+
+        display.setTextSize(1);
+        display.setTextColor(WHITE);
+        display.setCursor(85,35);
+        display.println("Check");
+        display.setCursor(88,45);
+        display.println("Line");
+
+        //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+        if(aa == 0){
+          if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
+            aa = 1;
+          }
+        }else{
+          if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
+            A_OLED = 20;  //その選択されているステートにレッツゴー
+            aa = 0;
+          }
+        }
+      }
+      else if(OLED_select == 3)  //Check Lineを選択しているとき
+      {
+        //Check Lineの文字設定
+        display.setTextSize(2);
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+        display.setCursor(0,27);
+        display.println("Check");
+        display.setCursor(6,44);
+        display.println("Line");
+
+        //選択画面で矢印マークを中央に表示
+        display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
+
+        display.setTextSize(1);
+        display.setTextColor(WHITE);
+        display.setCursor(90,35);
+        display.println("Set");
+        display.setCursor(94,45);
+        display.println("RA");
+
+        //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+        if(aa == 0){
+          if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
+            aa = 1;
+          }
+        }else{
+          if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
+            A_OLED = 30;  //その選択されているステートにレッツゴー
+            aa = 0;
+          }
+        }
+      }
+      else if(OLED_select == 4)  //Set RA（回り込みの大きさ）を選択しているとき
+      {
+        //回り込みの大きさを調整
+        display.setTextSize(2);
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+        display.setCursor(12,27);
+        display.println("Set");
+        display.setCursor(18,44);
+        display.println("RA");
+
+        //選択画面で矢印マークを中央に表示
+        display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
+
+        display.setTextSize(1);
+        display.setTextColor(WHITE);
+        display.setCursor(85,35);
+        display.println("Check");
+        display.setCursor(88,45);
+        display.println("Ball");
+
+        //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+        if(aa == 0){
+          if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
+            aa = 1;
+          }
+        }else{
+          if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
+            A_OLED = 40;  //その選択されているステートにレッツゴー
+            aa = 0;
+          }
+        }
+      }
+      else if(OLED_select == 5)  //Check Ballを選択しているとき
+      {
+        //Check Ballの文字設定
+        display.setTextSize(2);
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+        display.setCursor(0,27);
+        display.println("Check");
+        display.setCursor(6,44);
+        display.println("Ball");
+
+        //選択画面で矢印マークを中央に表示
+        display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
+
+        display.setTextSize(1);
+        display.setTextColor(WHITE);
+        display.setCursor(90,35);
+        display.println("Set");
+        display.setCursor(88,44);
+        display.println("Motar");
+
+        //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+        if(aa == 0){
+          if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
+            aa = 1;
+          }
+        }else{
+          if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
+            A_OLED = 50;  //その選択されているステートにレッツゴー
+            aa = 0;
+          }
+        }
+      }
+      else if(OLED_select == 6)  //Set Motarを選択しているとき
+      {
+        //Motar値を調整
+        display.setTextSize(2);
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+        display.setCursor(12,27);
+        display.println("Set");
+        display.setCursor(0,44);
+        display.println("Motar");
+
+        //選択画面で矢印マークを中央に表示
+        display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
+
+        display.setTextSize(1);
+        display.setTextColor(WHITE);
+        display.setCursor(85,40);
+        display.println("START");
+
+        //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+        if(aa == 0){
+          if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
+            aa = 1;
+          }
+        }else{
+          if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
+            A_OLED = 60;  //その選択されているステートにレッツゴー
+            aa = 0;
+          }
+        }
+      }
+    }
+    else if(A_OLED == 10)  //START
+    { //機体の中心となるコート上での0°の位置を決めるところ
+      if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
+        Button_select = 0;  //ボタンの選択(next)をデフォルトにする
+        B_OLED = A_OLED;
+      };
+
+      //OLEDの初期化
+      display.display();
+      display.clearDisplay();
+
+      display.setTextSize(2);
+      display.setTextColor(WHITE);
+      display.setCursor(30,0);
+      display.println("Please");
+      display.setCursor(0,20);
+      display.println("CAL");
+      display.setCursor(40,20);
+      display.println("&");
+      display.setCursor(56,20);
+      display.println("SetDir");
+
+      display.setTextSize(1);
+      display.setCursor(38,40);
+      display.println("of BNO055");
+
+      display.setTextColor(WHITE);
+      if(Button_select == 1)  //exitが選択されていたら
+      {
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+      }
+      display.setCursor(0,56);
+      display.println("Exit");
+
+      display.setTextColor(WHITE);
+      if(Button_select == 0)  //nextが選択されていたら（デフォルトはこれ）
+      {
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+      }
+      display.setCursor(104,56);
+      display.println("Next");
+
+      //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+      if(aa == 0){
+        if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
+          aa = 1;
+        }
+      }else{
+        if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
+          if(Button_select == 0)  //nextが選択されていたら
+          {
+            /*******************************************************************************ここで角度を決定*/
+            A_OLED = 15;  //スタート画面に行く
+          }
+          else if(Button_select == 1)  //exitが選択されていたら
+          {
+            A_OLED = 0;  //メニュー画面に戻る
+          }
+          aa = 0;
+        }
+      }
+    }
+    else if(A_OLED == 15)  //ボタン押したらロボット動作開始
+    {
+      if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
+        Button_select = 0;  //ボタンの選択(next)をデフォルトにする
+        B_OLED = A_OLED;
+      };
+
+      //OLEDの初期化
+      display.display();
+      display.clearDisplay();
+
+      display.setTextSize(3);
+      display.setTextColor(WHITE);
+      display.setCursor(22,0);
       display.println("START");
 
-      //選択画面で矢印マークを中央に表示
-      display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
+      display.setTextSize(1);
+      display.setCursor(38,35);
+      display.println("Dir :");
+      display.setTextSize(2);
+      display.setCursor(80,30);
+      display.println(/*ac.dir*/ digitalRead(Toggle_Switch));
 
+      //角度を再設定させるか、もとの選択画面に戻るかを決めるスイッチについての設定
       display.setTextSize(1);
       display.setTextColor(WHITE);
-      display.setCursor(90,35);
-      display.println("Set");
-      display.setCursor(88,45);
-      display.println("Line");
+      if(Button_select == 1)  //exitが選択されていたら
+      {
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+      }
+      display.setCursor(0,56);
+      display.println("Exit");
+
+      display.setTextColor(WHITE);
+      if(Button_select == 0)  //nextが選択されていたら（デフォルトはこれ）
+      {
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+      }
+      display.setCursor(56,55);
+      display.println("SetDir Again");
 
       //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
       if(aa == 0){
@@ -417,732 +755,452 @@ void OLED() {
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          A_OLED = 10;  //その選択されているステートにレッツゴー
+          if(Button_select == 0)  //SetDir Againが選択されていたら
+          {
+            /*************************************************************************************ここで角度の再設定*/
+            ac.dir = 300;  //ここで現在の角度を0°（基準）とする
+          }
+          else if(Button_select == 1)  //exitが選択されていたら
+          {
+            A_OLED = 0;  //メニュー画面に戻る
+          }
           aa = 0;
         }
       }
+
+      
+      if(Toggle_Switch == HIGH)  //
+      {
+        break;
+      }
     }
-    else if(OLED_select == 2)  //Set Lineを選択しているとき
+    else if(A_OLED == 20)  //Set Line
     {
-      //Line値を調整
+      if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
+        Button_select = 0;  //ボタンの選択(next)をデフォルトにする
+        B_OLED = A_OLED;
+      };
+
+      display.display();
+      display.clearDisplay();
+
       display.setTextSize(2);
+      display.setTextColor(WHITE);
+      display.setCursor(16,0);
+      display.println("Set Line");
+
+      display.fillTriangle(110, 33, 104, 27, 104, 39, WHITE);  //▶の描画
+      display.fillTriangle(18, 33, 24, 27, 24, 39, WHITE);  //◀の描画
+
+      //数字を中央揃えにするためのコード
+      display.setTextSize(3);
+      display.setTextColor(WHITE);
+      if(line.LINE_Level >= 1000){      //4桁の場合
+        display.setCursor(28,22);
+      }else if(line.LINE_Level >= 100){ //3桁の場合
+        display.setCursor(40,22);
+      }else if(line.LINE_Level >= 10){  //2桁の場合
+        display.setCursor(48,22);
+      }else{                       //1桁の場合
+        display.setCursor(56,22);
+      }
+      display.println(line.LINE_Level);  //ラインの閾値を表示
+
+      display.setTextSize(1);
       if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
         display.setTextColor(BLACK, WHITE);
       }
       else{
         display.setTextColor(WHITE);
       }
-      display.setCursor(12,27);
-      display.println("Set");
-      display.setCursor(6,44);
-      display.println("Line");
-
-      //選択画面で矢印マークを中央に表示
-      display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
-
-      display.setTextSize(1);
-      display.setTextColor(WHITE);
-      display.setCursor(85,35);
-      display.println("Check");
-      display.setCursor(88,45);
-      display.println("Line");
+      display.setCursor(44,56);
+      display.println("Confirm");
 
       //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+      //タクトスイッチが押されたら、メニューに戻る
       if(aa == 0){
         if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
           aa = 1;
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          A_OLED = 20;  //その選択されているステートにレッツゴー
+          address = 0x00;  //EEPROMのアドレスを0x00にする
+          // line.LINE_Level = 700;  //初めにデータをセットしておかなければならない
+          EEPROM.put(address, line.LINE_Level);  //EEPROMにラインの閾値を保存
+          A_OLED = 0;  //メニュー画面へ戻る
           aa = 0;
         }
       }
     }
-    else if(OLED_select == 3)  //Check Lineを選択しているとき
+    else if(A_OLED == 30)  //Check Line
     {
-      //Check Lineの文字設定
+      if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
+        Button_select = 0;  //ボタンの選択(next)をデフォルトにする
+        B_OLED = A_OLED;
+      };
+      
+      display.display();
+      display.clearDisplay();
+      line.getLINE_Vec();
+      //ラインの位置状況マップを表示する
+      display.drawCircle(32, 32, 20, WHITE);  //○ 20
+
+      line_x = line.Lvec_Long * cos(line.Lrad);  //ラインのx座標
+      line_y = line.Lvec_Long * sin(line.Lrad);  //ラインのy座標
+      //ラインの位置状況を表示する
+
+      //ラインの線の座標をOLEDでの座標に変換(-1~1の値を0~60の値に変換)
+      OLED_line_x = map(line_x, -1, 1, 0, 60);
+      OLED_line_y = map(line_y, -1, 1, 0, 60);
+
+      //ラインと円との交点を求める
+      b = OLED_line_y - tan(line.Lrad) * OLED_line_x;  //ラインの切片を求める
+      
+      al = 1 + pow(tan(line.Lrad), 2);                //解の公式のa
+      bl = 2 * b;                                     //解の公式のb
+      cl = pow(b, 2) - 900 * pow(tan(line.Lrad), 2);  //解の公式のc
+
+      OLED_line_ay = (-bl + sqrt(pow(bl, 2) - 4 * al * cl)) / (2 * al);  //解の公式のay
+      OLED_line_ax = (OLED_line_ay - b) / tan(line.Lrad);                //解の公式のax
+      OLED_line_by = (-bl - sqrt(pow(bl, 2) - 4 * al * cl)) / (2 * al);  //解の公式のby
+      OLED_line_bx = (OLED_line_by - b) / tan(line.Lrad);                //解の公式のbx
+
+
+      //ラインの線を表示
+      display.drawLine((OLED_line_ax + 2), (62 - OLED_line_ay), (OLED_line_bx + 2), (62 - OLED_line_by), WHITE);
+
+      //"Line"と表示する
       display.setTextSize(2);
-      if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-        display.setTextColor(BLACK, WHITE);
-      }
-      else{
-        display.setTextColor(WHITE);
-      }
-      display.setCursor(0,27);
-      display.println("Check");
-      display.setCursor(6,44);
+      display.setTextColor(WHITE);
+      display.setCursor(68,0);
       display.println("Line");
 
-      //選択画面で矢印マークを中央に表示
-      display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
-
+      //ここから下のコードのテキストをsize1にする
       display.setTextSize(1);
       display.setTextColor(WHITE);
-      display.setCursor(90,35);
-      display.println("Set");
-      display.setCursor(94,45);
-      display.println("RA");
+
+      //ラインの角度を表示する
+      display.setCursor(68,25);
+      display.println("Dir:");
+      if(line.LINE_on == 1){  //ラインがロボットの下にある
+        display.setCursor(96,25);
+        display.println(int(line.Lvec_Dir));
+      }
+      else{  //ラインがロボットの下にない
+        display.fillRect(96, 25, 34, 10, WHITE);
+      }
+
+      //ラインの距離を表示する
+      display.setCursor(68,39);
+      display.println("far:");
+      if(line.LINE_on == 1){  //ラインがロボットの下にある
+        display.setCursor(96,39);
+        display.println(line.Lvec_Long);
+      }
+      else{  //ラインがロボットの下にない
+        display.fillRect(96, 39, 34, 10, WHITE);
+      }
 
       //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+      //タクトスイッチが押されたら、メニューに戻る
       if(aa == 0){
         if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
           aa = 1;
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          A_OLED = 30;  //その選択されているステートにレッツゴー
+          A_OLED = 0;  //メニュー画面へ戻る
           aa = 0;
         }
       }
+
+      // //白線の平均値を表示する
+      // display.setCursor(68,44);
+      // display.println("Whi:");
+      // display.setCursor(96,44);
+      // display.println(Lwhite);
+
+      // //緑コートの平均値を表示する
+      // display.setCursor(68,56);
+      // display.println("Gre:");
+      // display.setCursor(96,56);
+      // display.println(Lgreen);
     }
-    else if(OLED_select == 4)  //Set RA（回り込みの大きさ）を選択しているとき
+    else if(A_OLED == 40)  //Set RA
     {
-      //回り込みの大きさを調整
+      if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
+        Button_select = 0;  //ボタンの選択(next)をデフォルトにする
+        B_OLED = A_OLED;
+      };
+
+      display.display();
+      display.clearDisplay();
+
       display.setTextSize(2);
+      display.setTextColor(WHITE);
+      display.setCursor(26,0);
+      display.println("Set RA");
+
+      display.fillTriangle(110, 33, 104, 27, 104, 39, WHITE);  //▶の描画
+      display.fillTriangle(18, 33, 24, 27, 24, 39, WHITE);  //◀の描画
+
+      //数字を中央揃えにするためのコード
+      display.setTextSize(3);
+      display.setTextColor(WHITE);
+      if(RA_size >= 1000){      //4桁の場合
+        display.setCursor(28,22);
+      }else if(RA_size >= 100){ //3桁の場合
+        display.setCursor(40,22);
+      }else if(RA_size >= 10){  //2桁の場合
+        display.setCursor(48,22);
+      }else{                       //1桁の場合
+        display.setCursor(56,22);
+      }
+      display.println(RA_size);  //ボールの閾値を表示
+
+      display.setTextSize(1);
       if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
         display.setTextColor(BLACK, WHITE);
       }
       else{
         display.setTextColor(WHITE);
       }
-      display.setCursor(12,27);
-      display.println("Set");
-      display.setCursor(18,44);
-      display.println("RA");
+      display.setCursor(44,56);
+      display.println("Confirm");
 
-      //選択画面で矢印マークを中央に表示
-      display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
+      //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+      //タクトスイッチが押されたら、メニューに戻る
+      if(aa == 0){
+        if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
+          aa = 1;
+        }
+      }else{
+        if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
+          address = 0x00;  //EEPROMのアドレスを0x00にする（リセット）
+          address += sizeof(line.LINE_Level);  //アドレスを次の変数のアドレスにする
+          // RA_size = 80;  //初めにデータをセットしておかなければならない
+          EEPROM.put(address, RA_size);  //EEPROMにボールの閾値を保存
+          A_OLED = 0;  //メニュー画面へ戻る
+          aa = 0;
+        }
+      }
+    }
+    else if(A_OLED == 50)  //Check Ball
+    {
+      if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
+        Button_select = 0;  //ボタンの選択(next)をデフォルトにする
+        B_OLED = A_OLED;
+      };
+      ball.getBallposition();
 
-      display.setTextSize(1);
+      display.display();
+      display.clearDisplay();
+
+      //ボールの座標をOLED用にする（無理やりint型にしてOLEDのドットに合わせる）
+      OLED_ball_x = map(ball.far * sin(radians(ball.ang)), -150, 150, 0, 60);  //
+      OLED_ball_y = map(ball.far * cos(radians(ball.ang)), -150, 150, 0, 60);  //
+
+      //ボールの位置状況マップを表示する
+      display.drawCircle(32, 32, 30, WHITE);  //○ 30
+      display.drawCircle(32, 32, 20, WHITE);  //○ 20
+      display.drawCircle(32, 32, 10, WHITE);  //○ 10
+      display.drawLine(2, 32, 62, 32, WHITE); //-
+      display.drawLine(32, 2, 32, 62, WHITE); //|
+
+      //ボールの位置を表示する
+      if(ball.flag == 1)  //ボールがあれば
+      {
+        display.fillCircle((OLED_ball_x + 2), (62 - OLED_ball_y), 5, WHITE);
+      }
+
+      //"Ball"と表示する
+      display.setTextSize(2);
       display.setTextColor(WHITE);
-      display.setCursor(85,35);
-      display.println("Check");
-      display.setCursor(88,45);
+      display.setCursor(68,0);
       display.println("Ball");
 
-      //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
-      if(aa == 0){
-        if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
-          aa = 1;
-        }
-      }else{
-        if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          A_OLED = 40;  //その選択されているステートにレッツゴー
-          aa = 0;
-        }
-      }
-    }
-    else if(OLED_select == 5)  //Check Ballを選択しているとき
-    {
-      //Check Ballの文字設定
-      display.setTextSize(2);
-      if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-        display.setTextColor(BLACK, WHITE);
-      }
-      else{
-        display.setTextColor(WHITE);
-      }
-      display.setCursor(0,27);
-      display.println("Check");
-      display.setCursor(6,44);
-      display.println("Ball");
-
-      //選択画面で矢印マークを中央に表示
-      display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
-
+      //ここから下のコードのテキストをsize1にする
       display.setTextSize(1);
       display.setTextColor(WHITE);
-      display.setCursor(90,35);
-      display.println("Set");
-      display.setCursor(88,44);
-      display.println("Motar");
+
+      //ボールの角度を表示する
+      display.setCursor(68,24);
+      display.println("Dir:");
+      if(ball.flag == 1){  //ボールがあれば値を表示
+        display.setCursor(96,24);
+        display.println(int(ball.ang));
+      }
+      else{  //ボールがなければ白い四角形を表示
+        display.fillRect(96, 24, 34, 10, WHITE);
+      }
+
+      //ボールの距離を表示する
+      display.setCursor(68,38);
+      display.println("far:");
+      if(ball.flag == 1){  //ボールがあれば値を表示
+        display.setCursor(96,38);
+        display.println(int(ball.far));
+      }
+      else{  //ボールがなければ白い四角形を表示
+        display.fillRect(96, 38, 34, 10, WHITE);
+      }
 
       //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+      //タクトスイッチが押されたら、メニューに戻る
       if(aa == 0){
         if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
           aa = 1;
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          A_OLED = 50;  //その選択されているステートにレッツゴー
+          A_OLED = 0;  //メニュー画面へ戻る
           aa = 0;
         }
       }
     }
-    else if(OLED_select == 6)  //Set Motarを選択しているとき
+    else if(A_OLED == 60)  //Set Motar
     {
-      //Motar値を調整
-      display.setTextSize(2);
-      if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-        display.setTextColor(BLACK, WHITE);
-      }
-      else{
-        display.setTextColor(WHITE);
-      }
-      display.setCursor(12,27);
-      display.println("Set");
-      display.setCursor(0,44);
-      display.println("Motar");
+      if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
+        Button_select = 0;  //ボタンの選択(next)をデフォルトにする
+        B_OLED = A_OLED;
+      };
 
-      //選択画面で矢印マークを中央に表示
-      display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
+      display.display();
+      display.clearDisplay();
+
+      display.setTextSize(2);
+      display.setTextColor(WHITE);
+      display.setCursor(14,0);
+      display.println("Set Motar");
+
+      display.fillTriangle(110, 33, 104, 27, 104, 39, WHITE);  //▶の描画
+      display.fillTriangle(18, 33, 24, 27, 24, 39, WHITE);  //◀の描画
+
+      //数字を中央揃えにするためのコード
+      display.setTextSize(3);
+      display.setTextColor(WHITE);
+      if(val_max >= 1000){      //4桁の場合
+        display.setCursor(28,22);
+      }else if(val_max >= 100){ //3桁の場合
+        display.setCursor(40,22);
+      }else if(val_max >= 10){  //2桁の場合
+        display.setCursor(48,22);
+      }else{                       //1桁の場合
+        display.setCursor(56,22);
+      }
+      display.println(val_max);  //ラインの閾値を表示
 
       display.setTextSize(1);
-      display.setTextColor(WHITE);
-      display.setCursor(85,40);
-      display.println("START");
+      if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+        display.setTextColor(BLACK, WHITE);
+      }
+      else{
+        display.setTextColor(WHITE);
+      }
+      display.setCursor(44,56);
+      display.println("Confirm");
 
       //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+      //タクトスイッチが押されたら、メニューに戻る
       if(aa == 0){
         if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
           aa = 1;
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          A_OLED = 60;  //その選択されているステートにレッツゴー
+          address = 0x00;  //EEPROMのアドレスを0x00にする（リセット）
+          address = sizeof(line.LINE_Level) + sizeof(RA_size);  //アドレスを次の変数のアドレスにする
+          // val_max = 100;  //初めにデータをセットしておかなければならない
+          EEPROM.put(address, val_max);  //EEPROMにボールの閾値を保存
+          A_OLED = 0;  //メニュー画面へ戻る
           aa = 0;
         }
       }
     }
-  }
-  else if(A_OLED == 10)  //START
-  { //機体の中心となるコート上での0°の位置を決めるところ
-    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
-      Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B_OLED = A_OLED;
-    };
 
-    //OLEDの初期化
-    display.display();
-    display.clearDisplay();
-
-    display.setTextSize(2);
-    display.setTextColor(WHITE);
-    display.setCursor(30,0);
-    display.println("Please");
-    display.setCursor(0,20);
-    display.println("CAL");
-    display.setCursor(40,20);
-    display.println("&");
-    display.setCursor(56,20);
-    display.println("SetDir");
-
-    display.setTextSize(1);
-    display.setCursor(38,40);
-    display.println("of BNO055");
-
-    display.setTextColor(WHITE);
-    if(Button_select == 1)  //exitが選択されていたら
-    {
-      if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-        display.setTextColor(BLACK, WHITE);
-      }
-      else{
-        display.setTextColor(WHITE);
-      }
-    }
-    display.setCursor(0,56);
-    display.println("Exit");
-
-    display.setTextColor(WHITE);
-    if(Button_select == 0)  //nextが選択されていたら（デフォルトはこれ）
-    {
-      if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-        display.setTextColor(BLACK, WHITE);
-      }
-      else{
-        display.setTextColor(WHITE);
-      }
-    }
-    display.setCursor(104,56);
-    display.println("Next");
-
-    //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
-    if(aa == 0){
-      if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
-        aa = 1;
-      }
-    }else{
-      if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-        if(Button_select == 0)  //nextが選択されていたら
-        {
-          /*******************************************************************************ここで角度を決定*/
-          A_OLED = 15;  //スタート画面に行く
-        }
-        else if(Button_select == 1)  //exitが選択されていたら
-        {
-          A_OLED = 0;  //メニュー画面に戻る
-        }
-        aa = 0;
-      }
-    }
-  }
-  else if(A_OLED == 15)  //ボタン押したらロボット動作開始
-  {
-    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
-      Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B_OLED = A_OLED;
-    };
-
-    //OLEDの初期化
-    display.display();
-    display.clearDisplay();
-
-    display.setTextSize(3);
-    display.setTextColor(WHITE);
-    display.setCursor(22,0);
-    display.println("START");
-
-    display.setTextSize(1);
-    display.setCursor(38,35);
-    display.println("ac.dir :");
-    display.setTextSize(2);
-    display.setCursor(80,30);
-    display.println(ac.dir);
-
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-    if(Button_select == 1)  //exitが選択されていたら
-    {
-      if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-        display.setTextColor(BLACK, WHITE);
-      }
-      else{
-        display.setTextColor(WHITE);
-      }
-    }
-    display.setCursor(0,56);
-    display.println("Exit");
-
-    display.setTextColor(WHITE);
-    if(Button_select == 0)  //nextが選択されていたら（デフォルトはこれ）
-    {
-      if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-        display.setTextColor(BLACK, WHITE);
-      }
-      else{
-        display.setTextColor(WHITE);
-      }
-    }
-    display.setCursor(56,55);
-    display.println("SetDir Again");
-
-    //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
-    if(aa == 0){
-      if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
-        aa = 1;
-      }
-    }else{
-      if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-        if(Button_select == 0)  //SetDir Againが選択されていたら
-        {
-          ac.dir = 300;  //ここで現在の角度を0°（基準）とする
-        }
-        else if(Button_select == 1)  //exitが選択されていたら
-        {
-          A_OLED = 0;  //メニュー画面に戻る
-        }
-        aa = 0;
-      }
-    }
-
-  }
-  else if(A_OLED == 20)  //Set Line
-  {
-    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
-      Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B_OLED = A_OLED;
-    };
-
-    display.display();
-    display.clearDisplay();
-
-    display.setTextSize(2);
-    display.setTextColor(WHITE);
-    display.setCursor(16,0);
-    display.println("Set Line");
-
-    display.fillTriangle(110, 33, 104, 27, 104, 39, WHITE);  //▶の描画
-    display.fillTriangle(18, 33, 24, 27, 24, 39, WHITE);  //◀の描画
-
-    //数字を中央揃えにするためのコード
-    display.setTextSize(3);
-    display.setTextColor(WHITE);
-    if(line.LINE_Level >= 1000){      //4桁の場合
-      display.setCursor(28,22);
-    }else if(line.LINE_Level >= 100){ //3桁の場合
-      display.setCursor(40,22);
-    }else if(line.LINE_Level >= 10){  //2桁の場合
-      display.setCursor(48,22);
-    }else{                       //1桁の場合
-      display.setCursor(56,22);
-    }
-    display.println(line.LINE_Level);  //ラインの閾値を表示
-
-    display.setTextSize(1);
-    if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-      display.setTextColor(BLACK, WHITE);
-    }
-    else{
-      display.setTextColor(WHITE);
-    }
-    display.setCursor(44,56);
-    display.println("Confirm");
-
-    //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
-    //タクトスイッチが押されたら、メニューに戻る
-    if(aa == 0){
-      if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
-        aa = 1;
-      }
-    }else{
-      if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-        address = 0x00;  //EEPROMのアドレスを0x00にする
-        // line.LINE_Level = 700;  //初めにデータをセットしておかなければならない
-        EEPROM.put(address, line.LINE_Level);  //EEPROMにラインの閾値を保存
-        A_OLED = 0;  //メニュー画面へ戻る
-        aa = 0;
-      }
-    }
-  }
-  else if(A_OLED == 30)  //Check Line
-  {
-    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
-      Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B_OLED = A_OLED;
-    };
-    
-    display.display();
-    display.clearDisplay();
-    line.getLINE_Vec();
-    //ラインの位置状況マップを表示する
-    display.drawCircle(32, 32, 20, WHITE);  //○ 20
-
-    //ラインの位置状況を表示する
-    /*ラインの線の座標をOLEDでの座標に変換(-1~1の値を2~62の値に変換)*/
-    display.drawLine(0, 0, 0, 0, WHITE); //ラインの線を表示
-
-    //"Line"と表示する
-    display.setTextSize(2);
-    display.setTextColor(WHITE);
-    display.setCursor(68,0);
-    display.println("Line");
-
-    //ここから下のコードのテキストをsize1にする
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-
-    //ラインの角度を表示する
-    display.setCursor(68,25);
-    display.println("ac.dir:");
-    if(line.LINE_on == 1){  //ラインがロボットの下にある
-      display.setCursor(96,25);
-      display.println(line.Lvec_Dir);
-    }
-    else{  //ラインがロボットの下にない
-      display.fillRect(96, 25, 34, 10, WHITE);
-    }
-
-    //ラインの距離を表示する
-    display.setCursor(68,39);
-    display.println("far:");
-    if(line.LINE_on == 1){  //ラインがロボットの下にある
-      display.setCursor(96,39);
-      display.println(line.Lvec_Long);
-    }
-    else{  //ラインがロボットの下にない
-      display.fillRect(96, 39, 34, 10, WHITE);
-    }
-
-    //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
-    //タクトスイッチが押されたら、メニューに戻る
-    if(aa == 0){
-      if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
-        aa = 1;
-      }
-    }else{
-      if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-        A_OLED = 0;  //メニュー画面へ戻る
-        aa = 0;
-      }
-    }
-
-    // //白線の平均値を表示する
-    // display.setCursor(68,44);
-    // display.println("Whi:");
-    // display.setCursor(96,44);
-    // display.println(Lwhite);
-
-    // //緑コートの平均値を表示する
-    // display.setCursor(68,56);
-    // display.println("Gre:");
-    // display.setCursor(96,56);
-    // display.println(Lgreen);
-  }
-  else if(A_OLED == 40)  //Set RA
-  {
-    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
-      Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B_OLED = A_OLED;
-    };
-
-    display.display();
-    display.clearDisplay();
-
-    display.setTextSize(2);
-    display.setTextColor(WHITE);
-    display.setCursor(16,0);
-    display.println("Set RA");
-
-    display.fillTriangle(110, 33, 104, 27, 104, 39, WHITE);  //▶の描画
-    display.fillTriangle(18, 33, 24, 27, 24, 39, WHITE);  //◀の描画
-
-    //数字を中央揃えにするためのコード
-    display.setTextSize(3);
-    display.setTextColor(WHITE);
-    if(RA_size >= 1000){      //4桁の場合
-      display.setCursor(28,22);
-    }else if(RA_size >= 100){ //3桁の場合
-      display.setCursor(40,22);
-    }else if(RA_size >= 10){  //2桁の場合
-      display.setCursor(48,22);
-    }else{                       //1桁の場合
-      display.setCursor(56,22);
-    }
-    display.println(RA_size);  //ボールの閾値を表示
-
-    display.setTextSize(1);
-    if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-      display.setTextColor(BLACK, WHITE);
-    }
-    else{
-      display.setTextColor(WHITE);
-    }
-    display.setCursor(44,56);
-    display.println("Confirm");
-
-    //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
-    //タクトスイッチが押されたら、メニューに戻る
-    if(aa == 0){
-      if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
-        aa = 1;
-      }
-    }else{
-      if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-        address = 0x00;  //EEPROMのアドレスを0x00にする（リセット）
-        address += sizeof(line.LINE_Level);  //アドレスを次の変数のアドレスにする
-        RA_size = 80;  //初めにデータをセットしておかなければならない
-        EEPROM.put(address, RA_size);  //EEPROMにボールの閾値を保存
-        A_OLED = 0;  //メニュー画面へ戻る
-        aa = 0;
-      }
-    }
-  }
-  else if(A_OLED == 50)  //Check Ball
-  {
-    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
-      Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B_OLED = A_OLED;
-    };
-    ball.getBallposition();
-
-    display.display();
-    display.clearDisplay();
-
-    //ボールの位置状況マップを表示する
-    display.drawCircle(32, 32, 30, WHITE);  //○ 30
-    display.drawCircle(32, 32, 20, WHITE);  //○ 20
-    display.drawCircle(32, 32, 10, WHITE);  //○ 10
-    display.drawLine(2, 32, 62, 32, WHITE); //-
-    display.drawLine(32, 2, 32, 62, WHITE); //|
-
-    //"Ball"と表示する
-    display.setTextSize(2);
-    display.setTextColor(WHITE);
-    display.setCursor(68,0);
-    display.println("Ball");
-
-    //ここから下のコードのテキストをsize1にする
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-
-    //ボールの角度を表示する
-    display.setCursor(68,24);
-    display.println("ac.dir:");
-    if(ball.flag == 1){  //ボールがあれば値を表示
-      display.setCursor(96,24);
-      display.println(ball.ang);
-    }
-    else{  //ボールがなければ白い四角形を表示
-      display.fillRect(96, 24, 34, 10, WHITE);
-    }
-
-    //ボールの距離を表示する
-    display.setCursor(68,38);
-    display.println("far:");
-    if(ball.flag == 1){  //ボールがあれば値を表示
-      display.setCursor(96,38);
-      display.println(ball.far);
-    }
-    else{  //ボールがなければ白い四角形を表示
-      display.fillRect(96, 38, 34, 10, WHITE);
-    }
-
-    //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
-    //タクトスイッチが押されたら、メニューに戻る
-    if(aa == 0){
-      if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
-        aa = 1;
-      }
-    }else{
-      if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-        A_OLED = 0;  //メニュー画面へ戻る
-        aa = 0;
-      }
-    }
-  }
-  else if(A_OLED == 60)  //Set Motar
-  {
-    if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
-      Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-      B_OLED = A_OLED;
-    };
-
-    display.display();
-    display.clearDisplay();
-
-    display.setTextSize(2);
-    display.setTextColor(WHITE);
-    display.setCursor(14,0);
-    display.println("Set Motar");
-
-    display.fillTriangle(110, 33, 104, 27, 104, 39, WHITE);  //▶の描画
-    display.fillTriangle(18, 33, 24, 27, 24, 39, WHITE);  //◀の描画
-
-    //数字を中央揃えにするためのコード
-    display.setTextSize(3);
-    display.setTextColor(WHITE);
-    if(val_max >= 1000){      //4桁の場合
-      display.setCursor(28,22);
-    }else if(val_max >= 100){ //3桁の場合
-      display.setCursor(40,22);
-    }else if(val_max >= 10){  //2桁の場合
-      display.setCursor(48,22);
-    }else{                       //1桁の場合
-      display.setCursor(56,22);
-    }
-    display.println(val_max);  //ラインの閾値を表示
-
-    display.setTextSize(1);
-    if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-      display.setTextColor(BLACK, WHITE);
-    }
-    else{
-      display.setTextColor(WHITE);
-    }
-    display.setCursor(44,56);
-    display.println("Confirm");
-
-    //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
-    //タクトスイッチが押されたら、メニューに戻る
-    if(aa == 0){
-      if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
-        aa = 1;
-      }
-    }else{
-      if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-        address = 0x00;  //EEPROMのアドレスを0x00にする（リセット）
-        address = sizeof(line.LINE_Level) + sizeof(RA_size);  //アドレスを次の変数のアドレスにする
-        // val_max = 100;  //初めにデータをセットしておかなければならない
-        EEPROM.put(address, val_max);  //EEPROMにボールの閾値を保存
-        A_OLED = 0;  //メニュー画面へ戻る
-        aa = 0;
-      }
-    }
-  }
-
-  //ロータリーエンコーダーの値を取得し制御する
-  long newPosition = myEnc.read();
-  if (newPosition != oldPosition) {
-    oldPosition = newPosition;
-    if(newPosition % 4 == 0)  //4の倍数のときのみ実行
-    {
-      new_encVal = newPosition / 4;  //Aにステートを代入
-      if(A_OLED == 0)  //選択画面にいるときはOLED_selectを変更する
+    //ロータリーエンコーダーの値を取得し制御する
+    long newPosition = myEnc.read();
+    if (newPosition != oldPosition) {
+      oldPosition = newPosition;
+      if(newPosition % 4 == 0)  //4の倍数のときのみ実行
       {
-        if(new_encVal > old_encVal)  //回転方向を判定
+        new_encVal = newPosition / 4;  //Aにステートを代入
+        if(A_OLED == 0)  //選択画面にいるときはOLED_selectを変更する
         {
-          OLED_select++;  //次の画面へ
-          if(OLED_select > 6)  //選択画面の数以上になったら1に戻す
+          if(new_encVal > old_encVal)  //回転方向を判定
           {
-            OLED_select = 1;
+            OLED_select++;  //次の画面へ
+            if(OLED_select > 6)  //選択画面の数以上になったら1に戻す
+            {
+              OLED_select = 1;
+            }
           }
         }
+        else if(A_OLED == 10 || A_OLED == 15)  //スタート画面にいるときはButton_selectを変更する
+        {
+          if(new_encVal > old_encVal)  //回転方向を判定
+          {
+            Button_select = 0;  //next
+          }
+          else if(new_encVal < old_encVal)
+          {
+            Button_select = 1;  //exit
+          }
+        }
+        else if(A_OLED == 20)  //ラインの閾値を変更する
+        {
+          if(new_encVal > old_encVal)  //回転方向を判定
+          {
+            if(line.LINE_Level < 1023)
+            {
+              line.LINE_Level++;
+            }
+          }
+          else if(new_encVal < old_encVal)
+          {
+            if(line.LINE_Level > 0)
+            {
+              line.LINE_Level--;
+            }
+          }
+        }
+        else if(A_OLED == 40)  //ボールの閾値を変更する
+        {
+          if(new_encVal > old_encVal)  //回転方向を判定
+          {
+            if(RA_size < 1023)
+            {
+              RA_size++;
+            }
+          }
+          else if(new_encVal < old_encVal)
+          {
+            if(RA_size > 0)
+            {
+              RA_size--;
+            }
+          }
+        }
+        else if(A_OLED == 60)  //モーターの出力を変更する
+        {
+          if(new_encVal > old_encVal)  //回転方向を判定
+          {
+            if(val_max < 1023)
+            {
+              val_max++;
+            }
+          }
+          else if(new_encVal < old_encVal)
+          {
+            if(val_max > 0)
+            {
+              val_max--;
+            }
+          }
+        }
+        old_encVal = new_encVal;
       }
-      else if(A_OLED == 10 || A_OLED == 15)  //スタート画面にいるときはButton_selectを変更する
-      {
-        if(new_encVal > old_encVal)  //回転方向を判定
-        {
-          Button_select = 0;  //next
-        }
-        else if(new_encVal < old_encVal)
-        {
-          Button_select = 1;  //exit
-        }
-      }
-      else if(A_OLED == 20)  //ラインの閾値を変更する
-      {
-        if(new_encVal > old_encVal)  //回転方向を判定
-        {
-          if(line.LINE_Level < 1023)
-          {
-            line.LINE_Level++;
-          }
-        }
-        else if(new_encVal < old_encVal)
-        {
-          if(line.LINE_Level > 0)
-          {
-            line.LINE_Level--;
-          }
-        }
-      }
-      else if(A_OLED == 40)  //ボールの閾値を変更する
-      {
-        if(new_encVal > old_encVal)  //回転方向を判定
-        {
-          if(RA_size < 1023)
-          {
-            RA_size++;
-          }
-        }
-        else if(new_encVal < old_encVal)
-        {
-          if(RA_size > 0)
-          {
-            RA_size--;
-          }
-        }
-      }
-      else if(A_OLED == 60)  //モーターの出力を変更する
-      {
-        if(new_encVal > old_encVal)  //回転方向を判定
-        {
-          if(val_max < 1023)
-          {
-            val_max++;
-          }
-        }
-        else if(new_encVal < old_encVal)
-        {
-          if(val_max > 0)
-          {
-            val_max--;
-          }
-        }
-      }
-      old_encVal = new_encVal;
     }
   }
+  display.clearDisplay(); //初期化してI2Cバスを解放する
 }
