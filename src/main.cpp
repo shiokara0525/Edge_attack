@@ -120,6 +120,7 @@ void loop(){
   if(A == 15){
     while(1){
       MOTER.moter_0();
+      ball.getBallposition();
       if(ball.far_x != 0 || ball.far_y != 0){
         break;
       }
