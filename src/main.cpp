@@ -38,17 +38,10 @@ const int Toggle_Switch = 14;  //スイッチのピン番号
 /*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
 
 
-unsigned int RA_size = 0;  //回り込みの大きさを示す変数
+int A = 0;  //どのチャプターに移動するかを決める変数
 
 int A_line = 0;  //ライン踏んでるか踏んでないか
 int B_line = 999;  //前回踏んでるか踏んでないか
-
-int toogle = 0;  //トグルスイッチの値を記録（トグルを引くときに使う）
-
-//エンコーダの設定
-long oldPosition  = -999;  //エンコーダのオールドポジの初期化
-long new_encVal = 0;  //エンコーダーの現在値を示す変数
-long old_encVal = 0;  //エンコーダーの過去値を示す変数
 
 //上二つの変数を上手い感じにこねくり回して最初に踏んだラインの位置を記録するよ(このやり方は部長に教えてもらったよ)
 
@@ -57,15 +50,9 @@ int edge_flag = 0; //ラインの端にいたときにゴールさせる確率�
 int side_flag = 0;
 
 const int Tact_Switch = 15;  //スイッチのピン番号 
-const int Toggle_Switch = 14;  //スイッチのピン番号
-const int Encoder_A = 17;  //エンコーダーのピン番号
-const int Encoder_B = 16;  //エンコーダーのピン番号
-Encoder myEnc(17, 16);  //エンコーダのピン番号
 const double pi = 3.1415926535897932384;  //円周率
 
-void OLED();
-
-int val_max = 140;
+void Switch(int);
 
 int val_max = 100;
 int RA_size = 0;
@@ -74,8 +61,10 @@ Ball ball;  //ボールのオブジクトだよ(基本的にボールの位置�
 AC ac;      //姿勢制御のオブジェクトだよ(基本的に姿勢制御は全部ここ)
 LINE line;  //ラインのオブジェクトだよ(基本的にラインの判定は全部ここ)
 moter MOTER;
-moter MOTER;
 timer Timer;
+timer Timer_edge;
+us US;
+timer timer_OLED; //タイマーの宣言(OLED用)
 
 /*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
 
@@ -135,10 +124,8 @@ void loop(){
 
     if(ball.ang < 0){  //ここで進む角度決めてるよ!(ボールの角度が負の場合)
       go_ang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (0.2 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
-      go_ang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (0.2 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
     else{  //(ボールの角度が正の場合)
-      go_ang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (0.2 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
       go_ang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (0.2 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
     }
 
@@ -146,7 +133,6 @@ void loop(){
 
     if(abs(go_ang.degrees) < 30){
       goval += 20;
-      if(Timer_edge.read_ms() < 2500){
       if(Timer_edge.read_ms() < 2500){
         if(edge_flag == 1){
           go_ang -= 15;
@@ -174,24 +160,20 @@ void loop(){
     if(Line_flag == 1){  //ラインがオンだったら
       A_line = 1;
       angle linedir(line.Lvec_Dir,true);
-      angle linedir(line.Lvec_Dir,true);
 
       if(A_line != B_line){  //前回はライン踏んでなくて今回はライン踏んでるよ～ってとき(ここはかなり重要!)
         B_line = A_line;
 
         line_flag = line.switchLineflag(linedir);
-        line_flag = line.switchLineflag(linedir);
 
         if(line_flag == 2){
           if(ball.ang < 0){
-            Timer_edge.reset();
             Timer_edge.reset();
             edge_flag = 1;
           }
         }
         else if(line_flag == 4){
           if(0 < ball.ang){
-            Timer_edge.reset();
             Timer_edge.reset();
             edge_flag = 2;
           }
@@ -202,22 +184,17 @@ void loop(){
         }
         else{  //斜めに踏んでるか、またはラインをまたいでるとき(緊急性が高いとするよ,進む角度ごと変えるよ)
           go_ang = line.decideGoang(linedir,line_flag);
-          go_ang = line.decideGoang(linedir,line_flag);
         }
 
-        MOTER.moter_0();
-        delay(75);
         MOTER.moter_0();
         delay(75);
       }
       else{  //連続でライン踏んでるとき
         if(1 < line.Lrange_num){  //ラインをまたいでいたらその真逆に動くよ
           go_ang = line.decideGoang(linedir,line_flag);
-          go_ang = line.decideGoang(linedir,line_flag);
           stop_flag = 0;
         }
         else{
-          stop_flag = line.switchLineflag(linedir);
           stop_flag = line.switchLineflag(linedir);
           line_flag = stop_flag;
         }
@@ -234,19 +211,7 @@ void loop(){
         if(line_flag == 1){
           Timer.reset();
           go_ang = 180;
-          go_ang = 180;
           while(abs(ball.ang) < 45){
-            double ACval = ac.getAC_val();
-            ball.getBallposition();
-            
-            if(Timer.read_ms() < 200){
-              MOTER.moveMoter(go_ang,goval,ACval,0);
-            }
-            else{
-              MOTER.moter_0();
-            }
-
-            if(4000 < Timer.read_ms()){
             double ACval = ac.getAC_val();
             ball.getBallposition();
             
@@ -269,21 +234,7 @@ void loop(){
             while(abs(ball.ang) < 90){
               double ACval = ac.getAC_val();
               ball.getBallposition();
-        else if(line_flag == 3){
-          Timer.reset();
-          go_ang = 0;
-          if(45 < abs(ball.ang) && abs(ball.ang) < 75){
-            while(abs(ball.ang) < 90){
-              double ACval = ac.getAC_val();
-              ball.getBallposition();
 
-              MOTER.moveMoter(go_ang,goval,ACval,0);
-              if(400 < Timer.read_ms()){
-                break;
-              }
-            }
-          }
-        }
               MOTER.moveMoter(go_ang,goval,ACval,0);
               if(400 < Timer.read_ms()){
                 break;
@@ -304,8 +255,6 @@ void loop(){
     Serial.print(" ねこ ");
     Serial.print(Line_flag);
     Serial.println();
-    A = 10;
-  }
 
     if(digitalRead(Tact_Switch) == LOW){
       Switch(2);
@@ -319,27 +268,12 @@ void loop(){
     OLED();
   }
 }
-  if(digitalRead(Tact_Switch) == LOW){
-    MOTER.moter_0();
-    toogle = digitalRead(Toggle_Switch);
-    OLED();
-  }
-}
 
 
 /*----------------------------------------------------------------いろいろ関数-----------------------------------------------------------*/
 
-void OLED() {
-  //OLEDの初期化
-  display.display();
-  display.clearDisplay();
 
-  timer_OLED.reset(); //タイマーのリセット(OLED用)
-  toogle = digitalRead(Toggle_Switch);
 
-  int A_OLED = 0;
-  int B_OLED = 999;  //ステート初期化のための変数
-  int aa = 0;  //タクトスイッチのルーレット状態防止用変数
 
 void OLED_setup(){
   EEPROM.get(address,line.LINE_Level);//EEPROMから読み出し
@@ -774,78 +708,6 @@ void OLED() {
       display.setCursor(56,55);
       display.println("SetDir Again");
 
-
-      //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
-      if(aa == 0){
-        if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
-          aa = 1;
-        }
-      }else{
-        if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          if(Button_select == 0)  //nextが選択されていたら
-          {
-            ac.setup_2();  //姿勢制御の値リセットするぜい
-            A_OLED = 15;  //スタート画面に行く
-          }
-          else if(Button_select == 1)  //exitが選択されていたら
-          {
-            A_OLED = 0;  //メニュー画面に戻る
-          }
-          aa = 0;
-        }
-      }
-    }
-    else if(A_OLED == 15)  //ボタン押したらロボット動作開始
-    {
-      if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
-        Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-        B_OLED = A_OLED;
-      };
-
-      //OLEDの初期化
-      display.display();
-      display.clearDisplay();
-
-      display.setTextSize(3);
-      display.setTextColor(WHITE);
-      display.setCursor(22,0);
-      display.println("START");
-
-      display.setTextSize(1);
-      display.setCursor(38,35);
-      display.println("Dir :");
-      display.setTextSize(2);
-      display.setCursor(80,30);
-      display.println(int(ac.getnowdir()));
-
-      //角度を再設定させるか、もとの選択画面に戻るかを決めるスイッチについての設定
-      display.setTextSize(1);
-      display.setTextColor(WHITE);
-      if(Button_select == 1)  //exitが選択されていたら
-      {
-        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-          display.setTextColor(BLACK, WHITE);
-        }
-        else{
-          display.setTextColor(WHITE);
-        }
-      }
-      display.setCursor(0,56);
-      display.println("Exit");
-
-      display.setTextColor(WHITE);
-      if(Button_select == 0)  //nextが選択されていたら（デフォルトはこれ）
-      {
-        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-          display.setTextColor(BLACK, WHITE);
-        }
-        else{
-          display.setTextColor(WHITE);
-        }
-      }
-      display.setCursor(56,55);
-      display.println("SetDir Again");
-
       //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
       if(aa == 0){
         if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
@@ -863,48 +725,6 @@ void OLED() {
           }
           aa = 0;
         }
-      }
-      if(digitalRead(Toggle_Switch) != toogle)  //
-      {
-        display.clearDisplay(); //初期化してI2Cバスを解放する
-        break;
-      }
-    }
-    else if(A_OLED == 20)  //Set Line
-    {
-      if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
-        Button_select = 0;  //ボタンの選択(next)をデフォルトにする
-        B_OLED = A_OLED;
-      };
-
-      display.display();
-      display.clearDisplay();
-
-      display.setTextSize(2);
-      display.setTextColor(WHITE);
-      display.setCursor(16,0);
-      display.println("Set Line");
-
-      display.fillTriangle(110, 33, 104, 27, 104, 39, WHITE);  //▶の描画
-      display.fillTriangle(18, 33, 24, 27, 24, 39, WHITE);  //◀の描画
-
-      //数字を中央揃えにするためのコード
-      display.setTextSize(3);
-      display.setTextColor(WHITE);
-      if(line.LINE_Level >= 1000){      //4桁の場合
-        display.setCursor(28,22);
-      }else if(line.LINE_Level >= 100){ //3桁の場合
-        display.setCursor(40,22);
-      }else if(line.LINE_Level >= 10){  //2桁の場合
-        display.setCursor(48,22);
-      }else{                       //1桁の場合
-        display.setCursor(56,22);
-      }
-      display.println(line.LINE_Level);  //ラインの閾値を表示
-
-      display.setTextSize(1);
-      if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-        display.setTextColor(BLACK, WHITE);
       }
       if(digitalRead(Toggle_Switch) != toogle)  //
       {

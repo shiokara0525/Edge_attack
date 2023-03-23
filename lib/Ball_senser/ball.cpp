@@ -18,7 +18,6 @@ int Ball::getBallposition(){  //ボールの位置を極座標系で取得
   double Bfar_y = 0; //ボールの距離のy成分
 
  
- 
   timer_ball.reset();
   while(timer_ball.read_us() < 833){
     for(int sen_num = 0; sen_num < 16; sen_num++){  //16個のセンサーの値を取得
@@ -34,7 +33,6 @@ int Ball::getBallposition(){  //ボールの位置を極座標系で取得
   for(int i = 0; i < 16; i++){   //値を集計するところ
     if(Bval_max < Bval[i]){
       Bval_max = Bval[i];
-      Bmax_num = i;
       Bmax_num = i;
     }
   }
@@ -79,10 +77,6 @@ void Ball::print(){  //ボールの位置を表示
   Serial.print(far);
   Serial.print(" ボールの角度 : ");
   Serial.print(ang);
-  Serial.print(" ボールの距離(y) : ");
-  Serial.print(far_y);
-  Serial.print(" (x) : ");
-  Serial.print(far_x);
   Serial.print(" ボールの距離(y) : ");
   Serial.print(far_y);
   Serial.print(" (x) : ");

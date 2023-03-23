@@ -11,16 +11,12 @@ public:
     void setup();
     int switchLineflag(angle);
     float decideGoang(angle,int);
-    int switchLineflag(angle);
-    float decideGoang(angle,int);
 
     double Lvec_Long; //ラインのベクトルの長さ
     double Lvec_Long_move; //ラインのベクトルの長さの移動量
     double Lvec_Dir_move; //ラインの和のベクトルの角度の移動量
     double Lvec_Dir; //ラインの和のベクトルの角度
     int Lrange_num = 0; //ラインの範囲を求めるための変数をリセット
-
-    double Lrad; //ラインの角度のラジアン
 
     int LINE_on; //ラインがロボットの下になかったら0,あったら1にする
     const int LINE_light = 27; //ラインセンサのLEDを光らせるかの制御をするためのピン
@@ -40,7 +36,6 @@ private:
     const int Lread[3] = {LINE_1, LINE_2, LINE_3}; //ラインセンサICの出力を読み取るためのピンを配列に格納
     double PI = 3.1415926535897932384626; //円周率
 
-    
     
 
     double Lsencer_Dir[24]; //ラインセンサの角度
