@@ -294,6 +294,7 @@ void loop(){
 void Switch(int flag){
   int A = 0;
   while(1){
+    ac.setup();  //正面方向決定(その他姿勢制御関連のセットアップ)
     OLED();
     if(A == 0){
       if(flag == 2){
@@ -357,16 +358,21 @@ void OLED() {
 
   int line_x = 0;
   int line_y = 0;
-  int OLED_line_x = 0;
-  int OLED_line_y = 0;
+
+  int Ax = 0;
+  int Ay = 0;
+  int Bx = 0;
+  int By = 0;
+
   int OLED_line_ax = 0;
   int OLED_line_ay = 0;
   int OLED_line_bx = 0;
   int OLED_line_by = 0;
+
   float b = 0;
-  float al = 0;
-  float bl = 0;
-  float cl = 0;
+  float La = 0;
+  float Lb = 0;
+  float Lc = 0;
 
 
   while(1){
@@ -686,7 +692,7 @@ void OLED() {
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
           if(Button_select == 0)  //nextが選択されていたら
           {
-            /*******************************************************************************ここで角度を決定*/
+            ac.setup_2();  //姿勢制御の値リセットするぜい
             A_OLED = 15;  //スタート画面に行く
           }
           else if(Button_select == 1)  //exitが選択されていたら
@@ -718,7 +724,7 @@ void OLED() {
       display.println("Dir :");
       display.setTextSize(2);
       display.setCursor(80,30);
-      display.println(/*ac.dir*/ digitalRead(Toggle_Switch));
+      display.println(int(ac.getnowdir()));
 
       //角度を再設定させるか、もとの選択画面に戻るかを決めるスイッチについての設定
       display.setTextSize(1);
@@ -757,8 +763,7 @@ void OLED() {
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
           if(Button_select == 0)  //SetDir Againが選択されていたら
           {
-            /*************************************************************************************ここで角度の再設定*/
-            ac.dir = 300;  //ここで現在の角度を0°（基準）とする
+            ac.setup_2();  //姿勢制御の値リセットするぜい
           }
           else if(Button_select == 1)  //exitが選択されていたら
           {
@@ -845,26 +850,27 @@ void OLED() {
       //ラインの位置状況マップを表示する
       display.drawCircle(32, 32, 20, WHITE);  //○ 20
 
+      //ラインの直線と円の交点の座標を求める
       line_x = line.Lvec_Long * cos(line.Lrad);  //ラインのx座標
       line_y = line.Lvec_Long * sin(line.Lrad);  //ラインのy座標
-      //ラインの位置状況を表示する
+
+      b = line_y - tan(line.Lrad) * line_x;  //y = tanΘx + b の解の公式のb
+
+      La = 1 + pow(tan(line.Lrad), 2);    //解の公式のa
+      Lb = tan(line.Lrad) * b;            //解の公式のb
+      Lc = pow(b, 2) - 900;               //解の公式のc
+
+      Ax = (-Lb + sqrt(pow(Lb, 2) - 4 * La * Lc)) / (2 * La);  //A点のx座標
+      Ay = tan(line.Lrad) * Ax + b;                            //A点のy座標
+
+      Bx = (-Lb - sqrt(pow(Lb, 2) - 4 * La * Lc)) / (2 * La);  //B点のx座標
+      By = tan(line.Lrad) * Bx + b;                            //B点のy座標
 
       //ラインの線の座標をOLEDでの座標に変換(-1~1の値を0~60の値に変換)
-      OLED_line_x = map(line_x, -1, 1, 0, 60);
-      OLED_line_y = map(line_y, -1, 1, 0, 60);
-
-      //ラインと円との交点を求める
-      b = OLED_line_y - tan(line.Lrad) * OLED_line_x;  //ラインの切片を求める
-      
-      al = 1 + pow(tan(line.Lrad), 2);                //解の公式のa
-      bl = 2 * b;                                     //解の公式のb
-      cl = pow(b, 2) - 900 * pow(tan(line.Lrad), 2);  //解の公式のc
-
-      OLED_line_ay = (-bl + sqrt(pow(bl, 2) - 4 * al * cl)) / (2 * al);  //解の公式のay
-      OLED_line_ax = (OLED_line_ay - b) / tan(line.Lrad);                //解の公式のax
-      OLED_line_by = (-bl - sqrt(pow(bl, 2) - 4 * al * cl)) / (2 * al);  //解の公式のby
-      OLED_line_bx = (OLED_line_by - b) / tan(line.Lrad);                //解の公式のbx
-
+      OLED_line_ax = map(Ax, -1.5, 1.5, 0, 60);  //ラインの線のA点のx座標
+      OLED_line_ay = map(Ay, -1.5, 1.5, 0, 60);  //ラインの線のA点のy座標
+      OLED_line_bx = map(Bx, -1.5, 1.5, 0, 60);  //ラインの線のB点のx座標
+      OLED_line_by = map(By, -1.5, 1.5, 0, 60);  //ラインの線のB点のy座標
 
       //ラインの線を表示
       display.drawLine((OLED_line_ax + 2), (62 - OLED_line_ay), (OLED_line_bx + 2), (62 - OLED_line_by), WHITE);
