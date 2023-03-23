@@ -23,14 +23,6 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define LOGO_HEIGHT   16
 #define LOGO_WIDTH    16
 
-int A_OLED = 0;
-int B_OLED = 999;  //ステート初期化のための変数
-int aa = 0;  //タクトスイッチのルーレット状態防止用変数
-
-int flash_OLED = 0;  //ディスプレイの中で白黒点滅させたいときにつかう
-int OLED_select = 1;  //スイッチが押されたときにどこを選択しているかを示す変数(この数字によって選択画面の表示が変化する)
-int Button_select = 0;  //スイッチが押されたときにどこを選択しているかを示す変数(この数字によってexitかnextかが決まる)
-
 /*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
 
 unsigned int address = 0x00;  //EEPROMのアドレス
@@ -42,7 +34,7 @@ unsigned int RA_size = 0;  //回り込みの大きさを示す変数
 int A_line = 0;  //ライン踏んでるか踏んでないか
 int B_line = 999;  //前回踏んでるか踏んでないか
 
-
+int toogle = 0;  //トグルスイッチの値を記録（トグルを引くときに使う）
 
 //エンコーダの設定
 long oldPosition  = -999;  //エンコーダのオールドポジの初期化
@@ -62,7 +54,6 @@ const int Encoder_B = 16;  //エンコーダーのピン番号
 Encoder myEnc(17, 16);  //エンコーダのピン番号
 const double pi = 3.1415926535897932384;  //円周率
 
-void Switch(int);
 void OLED();
 
 int val_max = 140;
@@ -82,6 +73,9 @@ void setup(){
   Serial.begin(9600);  //シリアルプリントできるよ
   Wire.begin();  //I2Cできるよ
   ball.setup();  //ボールとかのセットアップ
+  ac.setup();  //正面方向決定(その他姿勢制御関連のセットアップ)(ただ通信を成功させときたいだけ)
+  line.setup();  //ラインとかのセットアップ
+
   EEPROM.get(address,line.LINE_Level);//EEPROMから読み出し
   address += sizeof(line.LINE_Level);  //アドレスを次の変数のアドレスにする
   EEPROM.get(address,RA_size);//EEPROMから読み出し(前回取り出した変数からアドレスを取得し、次のアドレスをここで入力する)
@@ -100,8 +94,8 @@ void setup(){
   line.setup();
 
   timer_OLED.reset(); //タイマーのリセット(OLED用)
-  
-  Switch(1);
+  toogle = digitalRead(Toggle_Switch);
+  OLED();
   A = 10;
 }
 
@@ -277,82 +271,28 @@ void loop(){
     MOTER.moveMoter(go_ang,goval,AC_val,stop_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
     ball.print();
     Serial.println();
-
-    if(digitalRead(Tact_Switch) == LOW){
-      Switch(2);
-    }
     A = 10;
+  }
+
+  if(digitalRead(Tact_Switch) == LOW){
+    MOTER.moter_0();
+    toogle = digitalRead(Toggle_Switch);
+    OLED();
   }
 }
 
 
 /*----------------------------------------------------------------いろいろ関数-----------------------------------------------------------*/
 
-
-
-
-void Switch(int flag){
-  int A = 0;
-  while(1){
-    ac.setup();  //正面方向決定(その他姿勢制御関連のセットアップ)
-    OLED();
-    if(A == 0){
-      if(flag == 2){
-        if(digitalRead(Tact_Switch) == HIGH){
-          delay(100);
-          digitalWrite(line.LINE_light,LOW);  //ラインの光止めるよ
-          MOTER.moter_0();
-          A = 1;
-        }
-      }
-      else{
-        A = 1;
-      }
-
-
-    }
-
-    if(A == 1){
-      if(digitalRead(Tact_Switch) == LOW){
-        A = 2;
-      }
-    }
-
-    if(A == 2){
-      if(flag == 1){
-        ball.setup();
-        ac.setup();  //正面方向決定(その他姿勢制御関連のセットアップ)
-        line.setup();  //ラインとかのセットアップ
-      }
-      else{
-        ac.setup_2();  //姿勢制御の値リセットしたよ
-        digitalWrite(line.LINE_light,HIGH);  //ライン付けたよ
-      }
-      
-      if(digitalRead(Tact_Switch) == HIGH){
-        A = 3;  //準備オッケーだよ 
-      }
-    }
-
-    if(A == 3){
-      if(digitalRead(Tact_Switch) == LOW){
-        A = 4;  //スイッチはなされたらいよいよスタートだよ
-      }
-    }
-    
-    if(A == 4){
-      if(digitalRead(Tact_Switch) == HIGH){
-        break;
-      }
-    }
-  }
-  return;
-}
-
-
-
-
 void OLED() {
+  int A_OLED = 0;
+  int B_OLED = 999;  //ステート初期化のための変数
+  int aa = 0;  //タクトスイッチのルーレット状態防止用変数
+
+  int flash_OLED = 0;  //ディスプレイの中で白黒点滅させたいときにつかう
+  int OLED_select = 1;  //スイッチが押されたときにどこを選択しているかを示す変数(この数字によって選択画面の表示が変化する)
+  int Button_select = 0;  //スイッチが押されたときにどこを選択しているかを示す変数(この数字によってexitかnextかが決まる)
+  
   int OLED_ball_x = 0;
   int OLED_ball_y = 0;
 
@@ -373,8 +313,7 @@ void OLED() {
   float La = 0;
   float Lb = 0;
   float Lc = 0;
-
-
+  
   while(1){
     if(timer_OLED.read_ms() > 500) //0.5秒ごとに実行(OLEDにかかれてある文字を点滅させるときにこの周期で点滅させる)
     {
@@ -772,10 +711,9 @@ void OLED() {
           aa = 0;
         }
       }
-
-      
-      if(Toggle_Switch == HIGH)  //
+      if(digitalRead(Toggle_Switch) != toogle)  //
       {
+        display.clearDisplay(); //初期化してI2Cバスを解放する
         break;
       }
     }
@@ -1208,5 +1146,4 @@ void OLED() {
       }
     }
   }
-  display.clearDisplay(); //初期化してI2Cバスを解放する
 }
