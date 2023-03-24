@@ -52,9 +52,10 @@ int side_flag = 0;
 const int Tact_Switch = 15;  //スイッチのピン番号 
 const double pi = 3.1415926535897932384;  //円周率
 
-void Switch(int);
+void OLED_setup();
+void OLED();
 
-int val_max = 100;
+int val_max = 150;
 int RA_size = 0;
 
 Ball ball;  //ボールのオブジクトだよ(基本的にボールの位置取得は全部ここ)
@@ -119,7 +120,7 @@ void loop(){
 
 
   if(A == 20){  //進む角度決めるとこ
-    double ang_defference = 75.0 / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
+    double ang_defference = RA_size / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
     if(ball.ang < 0){  //ここで進む角度決めてるよ!(ボールの角度が負の場合)
@@ -256,9 +257,6 @@ void loop(){
     Serial.print(Line_flag);
     Serial.println();
 
-    if(digitalRead(Tact_Switch) == LOW){
-      Switch(2);
-    }
     A = 10;
   }
 
