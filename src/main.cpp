@@ -371,8 +371,8 @@ void OLED() {
         display.setTextColor(WHITE);
         display.setCursor(90,35);
         display.println("Set");
-        display.setCursor(88,45);
-        display.println("Line");
+        display.setCursor(88,44);
+        display.println("Motar");
 
         //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
         if(aa == 0){
@@ -386,7 +386,44 @@ void OLED() {
           }
         }
       }
-      else if(OLED_select == 2)  //Set Lineを選択しているとき
+      else if(OLED_select == 2)  //Set Motarを選択しているとき
+      {
+        //Motar値を調整
+        display.setTextSize(2);
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+        display.setCursor(12,27);
+        display.println("Set");
+        display.setCursor(0,44);
+        display.println("Motar");
+
+        //選択画面で矢印マークを中央に表示
+        display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
+
+        display.setTextSize(1);
+        display.setTextColor(WHITE);
+        display.setCursor(90,35);
+        display.println("Set");
+        display.setCursor(88,45);
+        display.println("Line");
+
+        //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+        if(aa == 0){
+          if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
+            aa = 1;
+          }
+        }else{
+          if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
+            A_OLED = 60;  //その選択されているステートにレッツゴー
+            aa = 0;
+          }
+        }
+      }
+      else if(OLED_select == 3)  //Set Lineを選択しているとき
       {
         //Line値を調整
         display.setTextSize(2);
@@ -423,7 +460,7 @@ void OLED() {
           }
         }
       }
-      else if(OLED_select == 3)  //Check Lineを選択しているとき
+      else if(OLED_select == 4)  //Check Lineを選択しているとき
       {
         //Check Lineの文字設定
         display.setTextSize(2);
@@ -460,7 +497,7 @@ void OLED() {
           }
         }
       }
-      else if(OLED_select == 4)  //Set RA（回り込みの大きさ）を選択しているとき
+      else if(OLED_select == 5)  //Set RA（回り込みの大きさ）を選択しているとき
       {
         //回り込みの大きさを調整
         display.setTextSize(2);
@@ -497,7 +534,7 @@ void OLED() {
           }
         }
       }
-      else if(OLED_select == 5)  //Check Ballを選択しているとき
+      else if(OLED_select == 6)  //Check Ballを選択しているとき
       {
         //Check Ballの文字設定
         display.setTextSize(2);
@@ -517,10 +554,10 @@ void OLED() {
 
         display.setTextSize(1);
         display.setTextColor(WHITE);
-        display.setCursor(90,35);
-        display.println("Set");
-        display.setCursor(88,44);
-        display.println("Motar");
+        display.setCursor(85,35);
+        display.println("Check");
+        display.setCursor(88,45);
+        display.println("Any");
 
         //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
         if(aa == 0){
@@ -534,9 +571,9 @@ void OLED() {
           }
         }
       }
-      else if(OLED_select == 6)  //Set Motarを選択しているとき
+      else if(OLED_select == 7)  //勝手にデバックしてもろて
       {
-        //Motar値を調整
+        //Check anyの文字設定
         display.setTextSize(2);
         if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
           display.setTextColor(BLACK, WHITE);
@@ -544,10 +581,10 @@ void OLED() {
         else{
           display.setTextColor(WHITE);
         }
-        display.setCursor(12,27);
-        display.println("Set");
-        display.setCursor(0,44);
-        display.println("Motar");
+        display.setCursor(0,27);
+        display.println("Check");
+        display.setCursor(10,44);
+        display.println("Any");
 
         //選択画面で矢印マークを中央に表示
         display.fillTriangle(70, 43, 64, 37, 64, 49, WHITE);  //▶の描画
@@ -564,7 +601,7 @@ void OLED() {
           }
         }else{
           if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-            A_OLED = 60;  //その選択されているステートにレッツゴー
+            A_OLED = 70;  //その選択されているステートにレッツゴー
             aa = 0;
           }
         }
@@ -1061,6 +1098,71 @@ void OLED() {
         }
       }
     }
+    else if(A_OLED == 70)  //デバックとりやすくするゼット (計6個表示させられる) --------------------------------------------------------------------ここにみた変数名を入力してね---------------------
+    {
+      //OLEDの初期化
+      display.display();
+      display.clearDisplay();
+
+      //テキストサイズと色の設定
+      display.setTextSize(1);
+      display.setTextColor(WHITE);
+      
+      display.setCursor(0,0);  //1列目
+      display.println("");  //この中に変数名を入力
+      display.setCursor(30,0);
+      display.println(":");    //この中に知りたい変数を入力
+      display.setCursor(36,0);
+      display.println();    //この中に知りたい変数を入力
+
+      display.setCursor(0,10);  //2列目
+      display.println("");  //この中に変数名を入力
+      display.setCursor(30,10);
+      display.println(":");    //この中に知りたい変数を入力
+      display.setCursor(36,10);
+      display.println();    //この中に知りたい変数を入力
+
+      display.setCursor(0,20); //3列目
+      display.println("");  //この中に変数名を入力
+      display.setCursor(30,20);
+      display.println(":");    //この中に知りたい変数を入力
+      display.setCursor(36,20);
+      display.println();    //この中に知りたい変数を入力
+
+      display.setCursor(0,30); //4列目
+      display.println("");  //この中に変数名を入力
+      display.setCursor(30,30);
+      display.println(":");    //この中に知りたい変数を入力
+      display.setCursor(36,30);
+      display.println();    //この中に知りたい変数を入力
+
+      display.setCursor(0,40); //5列目
+      display.println("");  //この中に変数名を入力
+      display.setCursor(30,40);
+      display.println(":");    //この中に知りたい変数を入力
+      display.setCursor(36,40);
+      display.println();    //この中に知りたい変数を入力
+
+      display.setCursor(0,50); //6列目
+      display.println("");  //この中に変数名を入力
+      display.setCursor(30,50);
+      display.println(":");    //この中に知りたい変数を入力
+      display.setCursor(36,50);
+      display.println();    //この中に知りたい変数を入力
+
+      //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+      //タクトスイッチが押されたら、メニューに戻る
+      if(aa == 0){
+        if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
+          aa = 1;
+        }
+      }else{
+        if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
+          A_OLED = 0;  //メニュー画面へ戻る
+          aa = 0;
+        }
+      }
+    }
 
     //ロータリーエンコーダーの値を取得し制御する
     long newPosition = myEnc.read();
@@ -1074,7 +1176,7 @@ void OLED() {
           if(new_encVal > old_encVal)  //回転方向を判定
           {
             OLED_select++;  //次の画面へ
-            if(OLED_select > 6)  //選択画面の数以上になったら1に戻す
+            if(OLED_select > 7)  //選択画面の数以上になったら1に戻す
             {
               OLED_select = 1;
             }
