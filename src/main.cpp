@@ -43,11 +43,14 @@ int A = 0;  //どのチャプターに移動するかを決める変数
 int A_line = 0;  //ライン踏んでるか踏んでないか
 int B_line = 999;  //前回踏んでるか踏んでないか
 
+float Dir_target = 0;
+
 //上二つの変数を上手い感じにこねくり回して最初に踏んだラインの位置を記録するよ(このやり方は部長に教えてもらったよ)
 
 int line_flag = 0;    //最初にどんな風にラインの判定したか記録
 int edge_flag = 0; //ラインの端にいたときにゴールさせる確率を上げるための変数だよ(なんもなかったら0,右の端だったら1,左だったら2)
 int side_flag = 0;
+int AC_flag = 0;
 
 const int Tact_Switch = 15;  //スイッチのピン番号 
 const double pi = 3.1415926535897932384;  //円周率
@@ -78,6 +81,7 @@ void setup(){
   line.setup();  //ラインとかのセットアップ
   OLED_setup();
   OLED();
+  Dir_target = ac.dir_target;
   A = 10;
 }
 
@@ -132,21 +136,48 @@ void loop(){
 
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
-    if(abs(go_ang.degrees) < 30){
-      goval += 20;
-      if(Timer_edge.read_ms() < 2500){
+    if(AC_flag == 0){
+      if(edge_flag == 1){
+        ac.dir_target -= 45;
+        Serial.print(" はいったよ ");
+        if(180 < abs(ac.dir_target)){
+          ac.dir_target += (ac.dir_target < 0 ? 360 : -360);
+        }
+        Timer_edge.reset();
+        AC_flag = 1;
+        edge_flag = 1;
+      }
+      else if(edge_flag == 2){
+        ac.dir_target += 45;
+        Serial.print(" はいったよ ");
+        if(180 < abs(ac.dir_target)){
+          ac.dir_target += (ac.dir_target < 0 ? 360 : -360);
+        }
+        Timer_edge.reset();
+        AC_flag = 1;
+        edge_flag = 2;
+      }
+    }
+    else{
+      if(1000 < Timer_edge.read_ms() || 90 < abs(ball.ang)){
         if(edge_flag == 1){
-          go_ang -= 15;
+          ac.dir_target = Dir_target;
+          Timer_edge.reset();
+          AC_flag = 0;
+          edge_flag = 0;
         }
         else if(edge_flag == 2){
-          go_ang += 15;
+          ac.dir_target = Dir_target;
+          Timer_edge.reset();
+          AC_flag = 0;
+          edge_flag = 0;
         }
-      }
-      else{
+        AC_flag = 0;
         edge_flag = 0;
       }
     }
 
+    
     if(270 < abs(go_ang.degrees)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
       go_ang = (go_ang.degrees < 0 ? -270 : 270);
     }
@@ -168,22 +199,22 @@ void loop(){
         line_flag = line.switchLineflag(linedir);
 
         if(line_flag == 2){
-          if(ball.ang < 0){
-            Timer_edge.reset();
-            edge_flag = 1;
-          }
+          Timer_edge.reset();
+          edge_flag = 1;
         }
         else if(line_flag == 4){
-          if(0 < ball.ang){
-            Timer_edge.reset();
-            edge_flag = 2;
-          }
+          Timer_edge.reset();
+          edge_flag = 2;
         }
 
         if(line.Lrange_num == 1){  //ラインをちょっと踏んでるとき(ここでは緊急性が高くないとする)
           stop_flag = line_flag;   //緊急性高くないし、まともにライン踏んでるから緩めの処理するよ
         }
         else{  //斜めに踏んでるか、またはラインをまたいでるとき(緊急性が高いとするよ,進む角度ごと変えるよ)
+          go_ang = line.decideGoang(linedir,line_flag);
+        }
+
+        if(AC_flag == 1){
           go_ang = line.decideGoang(linedir,line_flag);
         }
 
@@ -203,46 +234,62 @@ void loop(){
       if(line_flag == 0){  //ライン踏んでるけど別に進んでいいよ～って時
         B_line = 0;  //ラインで特に影響受けてないからライン踏んでないのと扱い同じのほうが都合いいよね!
       }
+      if(AC_flag == 1){
+        go_ang = line.decideGoang(linedir,line_flag);
+      }
     }
     else if(Line_flag == 0){  //ラインを踏んでなかったら
       A_line = 0;
       if(A_line != B_line){  //前回までライン踏んでたら
         B_line = A_line;  //今回はライン踏んでないよ
-
-        if(line_flag == 1){
-          Timer.reset();
-          go_ang = 180;
-          while(abs(ball.ang) < 45){
-            double ACval = ac.getAC_val();
-            ball.getBallposition();
-            
-            if(Timer.read_ms() < 200){
-              MOTER.moveMoter(go_ang,goval,ACval,0);
+        if(AC_flag == 0){
+          if(line_flag == 1){
+            Timer.reset();
+            if(edge_flag == 1){
+              go_ang = 165.0;
+            }
+            else if(edge_flag == 2){
+              go_ang = -165.0;
             }
             else{
-              MOTER.moter_0();
+              go_ang = 180.0;
             }
-
-            if(4000 < Timer.read_ms()){
-              break;
-            }
-          }
-        }
-        else if(line_flag == 3){
-          Timer.reset();
-          go_ang = 0;
-          if(45 < abs(ball.ang) && abs(ball.ang) < 75){
-            while(abs(ball.ang) < 90){
+            while(abs(ball.ang) < 45){
               double ACval = ac.getAC_val();
               ball.getBallposition();
+              
+              if(Timer.read_ms() < 350){
+                MOTER.moveMoter(go_ang,goval,ACval,0);
+              }
+              else{
+                MOTER.moter_0();
+              }
 
-              MOTER.moveMoter(go_ang,goval,ACval,0);
-              if(400 < Timer.read_ms()){
+              if(2000 < Timer.read_ms()){
+                break;
+              }
+              if(line.getLINE_Vec() == 1){
                 break;
               }
             }
           }
+          else if(line_flag == 3){
+            Timer.reset();
+            go_ang = 0;
+            if(45 < abs(ball.ang) && abs(ball.ang) < 75){
+              while(abs(ball.ang) < 90){
+                double ACval = ac.getAC_val();
+                ball.getBallposition();
+
+                MOTER.moveMoter(go_ang,goval,ACval,0);
+                if(400 < Timer.read_ms()){
+                  break;
+                }
+              }
+            }
+          }
         }
+
       }
       line_flag = 0;
     }
@@ -253,8 +300,8 @@ void loop(){
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
     MOTER.moveMoter(go_ang,goval,AC_val,stop_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
     line.print();
-    Serial.print(" ねこ ");
-    Serial.print(Line_flag);
+    Serial.print(" 端 : ");
+    Serial.print(edge_flag);
     Serial.println();
 
     A = 10;
