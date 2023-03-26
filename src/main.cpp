@@ -37,7 +37,7 @@ const int Toggle_Switch = 14;  //スイッチのピン番号
 
 /*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
 
-
+int flag = 0;
 int A = 0;  //どのチャプターに移動するかを決める変数
 
 int A_line = 0;  //ライン踏んでるか踏んでないか
@@ -136,47 +136,27 @@ void loop(){
 
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
-    if(AC_flag == 0){
-      if(edge_flag == 1){
-        ac.dir_target -= 45;
-        Serial.print(" はいったよ ");
-        if(180 < abs(ac.dir_target)){
-          ac.dir_target += (ac.dir_target < 0 ? 360 : -360);
-        }
-        Timer_edge.reset();
-        AC_flag = 1;
-        edge_flag = 1;
-      }
-      else if(edge_flag == 2){
-        ac.dir_target += 45;
-        Serial.print(" はいったよ ");
-        if(180 < abs(ac.dir_target)){
-          ac.dir_target += (ac.dir_target < 0 ? 360 : -360);
-        }
-        Timer_edge.reset();
-        AC_flag = 1;
-        edge_flag = 2;
-      }
-    }
-    else{
-      if(1000 < Timer_edge.read_ms() || 90 < abs(ball.ang)){
+
+    if(AC_flag == 1){
+      if(2000 < Timer_edge.read_ms() || 90 < abs(ball.ang)){
         if(edge_flag == 1){
           ac.dir_target = Dir_target;
           Timer_edge.reset();
-          AC_flag = 0;
-          edge_flag = 0;
         }
         else if(edge_flag == 2){
           ac.dir_target = Dir_target;
           Timer_edge.reset();
-          AC_flag = 0;
-          edge_flag = 0;
         }
         AC_flag = 0;
         edge_flag = 0;
       }
     }
 
+    if(edge_flag != 0){
+      if(abs(ball.ang) < 45){
+        go_ang = ball.ang;
+      }
+    }
     
     if(270 < abs(go_ang.degrees)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
       go_ang = (go_ang.degrees < 0 ? -270 : 270);
@@ -243,18 +223,19 @@ void loop(){
       if(A_line != B_line){  //前回までライン踏んでたら
         B_line = A_line;  //今回はライン踏んでないよ
         if(AC_flag == 0){
+          
           if(line_flag == 1){
             Timer.reset();
             if(edge_flag == 1){
-              go_ang = 165.0;
+              go_ang = 175.0;
             }
             else if(edge_flag == 2){
-              go_ang = -165.0;
+              go_ang = -175.0;
             }
             else{
               go_ang = 180.0;
             }
-            while(abs(ball.ang) < 45){
+            while(abs(ball.ang) < 60){
               double ACval = ac.getAC_val();
               ball.getBallposition();
               
@@ -263,9 +244,10 @@ void loop(){
               }
               else{
                 MOTER.moter_0();
+                flag = 1;
               }
 
-              if(2000 < Timer.read_ms()){
+              if(1100 < Timer.read_ms()){           
                 break;
               }
               if(line.getLINE_Vec() == 1){
@@ -287,6 +269,28 @@ void loop(){
                 }
               }
             }
+          }
+
+          if(flag == 1){
+            if(edge_flag == 1){
+              ac.dir_target -= 45;
+              Serial.print(" はいったよ ");
+              if(180 < abs(ac.dir_target)){
+                ac.dir_target += (ac.dir_target < 0 ? 360 : -360);
+              }
+              Timer_edge.reset();
+              AC_flag = 1;
+            }
+            else if(edge_flag == 2){
+              ac.dir_target += 45;
+              Serial.print(" はいったよ ");
+              if(180 < abs(ac.dir_target)){
+                ac.dir_target += (ac.dir_target < 0 ? 360 : -360);
+              }
+              Timer_edge.reset();
+              AC_flag = 1;
+            }
+            flag = 0;
           }
         }
 
