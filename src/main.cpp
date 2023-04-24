@@ -138,15 +138,9 @@ void loop(){
 
 
     if(AC_flag == 1){
-      if(2000 < Timer_edge.read_ms() || 90 < abs(ball.ang)){
-        if(edge_flag == 1){
-          ac.dir_target = Dir_target;
-          Timer_edge.reset();
-        }
-        else if(edge_flag == 2){
-          ac.dir_target = Dir_target;
-          Timer_edge.reset();
-        }
+      if(1500 < Timer_edge.read_ms() || 90 < abs(ball.ang)){
+        ac.dir_target = Dir_target;
+        Timer_edge.reset();
         AC_flag = 0;
         edge_flag = 0;
       }
@@ -195,6 +189,16 @@ void loop(){
         }
 
         if(AC_flag == 1){
+          if(edge_flag == 1){
+            angle line_dir(line.Lvec_Dir - 45,true);
+            line_dir.to_range(180,true);
+            line_flag = line.switchLineflag(linedir);
+          }
+          else if(edge_flag == 2){
+            angle line_dir(line.Lvec_Dir + 45,true);
+            line_dir.to_range(180,true);
+            line_flag = line.switchLineflag(linedir);
+          }
           go_ang = line.decideGoang(linedir,line_flag);
         }
 
