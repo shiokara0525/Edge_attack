@@ -67,6 +67,7 @@ LINE line;  //ラインのオブジェクトだよ(基本的にラインの判�
 moter MOTER;
 timer Timer;
 timer Timer_edge;
+timer Timer_AC;
 us US;
 timer timer_OLED; //タイマーの宣言(OLED用)
 
@@ -138,17 +139,20 @@ void loop(){
 
 
     if(AC_flag == 1){
-      if(1500 < Timer_edge.read_ms() || 90 < abs(ball.ang)){
+      if(1500 < Timer_AC.read_ms() || 45 < abs(ball.ang)){
         ac.dir_target = Dir_target;
         Timer_edge.reset();
         AC_flag = 0;
         edge_flag = 0;
       }
+      else{
+        go_ang = ball.ang;
+      }
     }
 
     if(edge_flag != 0){
-      if(abs(ball.ang) < 45){
-        go_ang = ball.ang;
+      if(2000 < Timer_edge.read_ms()){
+        edge_flag = 0;
       }
     }
     
@@ -185,20 +189,6 @@ void loop(){
           stop_flag = line_flag;   //緊急性高くないし、まともにライン踏んでるから緩めの処理するよ
         }
         else{  //斜めに踏んでるか、またはラインをまたいでるとき(緊急性が高いとするよ,進む角度ごと変えるよ)
-          go_ang = line.decideGoang(linedir,line_flag);
-        }
-
-        if(AC_flag == 1){
-          if(edge_flag == 1){
-            angle line_dir(line.Lvec_Dir - 45,true);
-            line_dir.to_range(180,true);
-            line_flag = line.switchLineflag(linedir);
-          }
-          else if(edge_flag == 2){
-            angle line_dir(line.Lvec_Dir + 45,true);
-            line_dir.to_range(180,true);
-            line_flag = line.switchLineflag(linedir);
-          }
           go_ang = line.decideGoang(linedir,line_flag);
         }
 
@@ -276,25 +266,9 @@ void loop(){
           }
 
           if(flag == 1){
-            if(edge_flag == 1){
-              ac.dir_target -= 45;
-              Serial.print(" はいったよ ");
-              if(180 < abs(ac.dir_target)){
-                ac.dir_target += (ac.dir_target < 0 ? 360 : -360);
-              }
-              Timer_edge.reset();
-              AC_flag = 1;
-            }
-            else if(edge_flag == 2){
-              ac.dir_target += 45;
-              Serial.print(" はいったよ ");
-              if(180 < abs(ac.dir_target)){
-                ac.dir_target += (ac.dir_target < 0 ? 360 : -360);
-              }
-              Timer_edge.reset();
-              AC_flag = 1;
-            }
+            AC_flag = 1;
             flag = 0;
+            Timer_AC.reset();
           }
         }
 
