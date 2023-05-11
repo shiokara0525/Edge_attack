@@ -30,7 +30,7 @@ const int Encoder_B = 16;  //エンコーダーのピン番号
 Encoder myEnc(17, 16);  //エンコーダのピン番号
 long oldPosition  = -999;  //エンコーダのオールドポジの初期化
 long new_encVal = 0;  //エンコーダーの現在値を示す変数
-long old_encVal = 0;  //エンコーダーの過去値を示す変数
+long old_encVal = 0;  //エンコーダーの過去値を示す変数  
 unsigned int address = 0x00;  //EEPROMのアドレス
 int toogle = 0;  //トグルスイッチの値を記録（トグルを引くときに使う）
 const int Toggle_Switch = 14;  //スイッチのピン番号
@@ -49,8 +49,6 @@ float Dir_target = 0;
 
 int line_flag = 0;    //最初にどんな風にラインの判定したか記録
 int edge_flag = 0; //ラインの端にいたときにゴールさせる確率を上げるための変数だよ(なんもなかったら0,右の端だったら1,左だったら2)
-int side_flag = 0;
-int AC_flag = 0;
 
 const int Tact_Switch = 15;  //スイッチのピン番号 
 const double pi = 3.1415926535897932384;  //円周率
@@ -65,9 +63,7 @@ Ball ball;  //ボールのオブジクトだよ(基本的にボールの位置�
 AC ac;      //姿勢制御のオブジェクトだよ(基本的に姿勢制御は全部ここ)
 LINE line;  //ラインのオブジェクトだよ(基本的にラインの判定は全部ここ)
 moter MOTER;
-timer Timer;
 timer Timer_edge;
-timer Timer_AC;
 us US;
 timer timer_OLED; //タイマーの宣言(OLED用)
 
@@ -138,11 +134,11 @@ void loop(){
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
 
-    if(AC_flag == 1){
-      if(1500 < Timer_AC.read_ms() || 45 < abs(ball.ang)){
+
+    if(edge_flag != 0){
+      if(1500 < Timer_edge.read_ms() || 45 < abs(ball.ang)){
         ac.dir_target = Dir_target;
         Timer_edge.reset();
-        AC_flag = 0;
         edge_flag = 0;
       }
       else{
@@ -150,11 +146,6 @@ void loop(){
       }
     }
 
-    if(edge_flag != 0){
-      if(2000 < Timer_edge.read_ms()){
-        edge_flag = 0;
-      }
-    }
     
     if(270 < abs(go_ang.degrees)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
       go_ang = (go_ang.degrees < 0 ? -270 : 270);
@@ -208,67 +199,57 @@ void loop(){
       if(line_flag == 0){  //ライン踏んでるけど別に進んでいいよ～って時
         B_line = 0;  //ラインで特に影響受けてないからライン踏んでないのと扱い同じのほうが都合いいよね!
       }
-      if(AC_flag == 1){
-        go_ang = line.decideGoang(linedir,line_flag);
-      }
     }
     else if(Line_flag == 0){  //ラインを踏んでなかったら
       A_line = 0;
       if(A_line != B_line){  //前回までライン踏んでたら
         B_line = A_line;  //今回はライン踏んでないよ
-        if(AC_flag == 0){
           
-          if(line_flag == 1){
-            Timer.reset();
-            if(edge_flag == 1){
-              go_ang = 175.0;
+        if(line_flag == 1){  //前方向ライン踏んだ時
+          timer Timer;
+          Timer.reset();
+          if(edge_flag == 1){
+            go_ang = 175.0;
+          }
+          else if(edge_flag == 2){
+            go_ang = -175.0;
+          }
+          else{
+            go_ang = 180.0;
+          }
+
+          while(abs(ball.ang) < 60){  //前方向にボールがあるとき
+            double ACval = ac.getAC_val();
+            ball.getBallposition();
+            
+            if(Timer.read_ms() < 350){  //下がるよ
+              MOTER.moveMoter(go_ang,goval,ACval,0);
             }
-            else if(edge_flag == 2){
-              go_ang = -175.0;
+            else{  //止まるよ
+              MOTER.moter_0();
+              flag = 1;
             }
-            else{
-              go_ang = 180.0;
+
+            if(1100 < Timer.read_ms() || line.getLINE_Vec() == 1){
+              break;  //1.1秒経つorライン踏んだら
             }
-            while(abs(ball.ang) < 60){
+          }
+        }
+        else if(line_flag == 3){  //後ろでライン踏んだら
+          timer Timer;
+          Timer.reset();
+
+          go_ang = 0;
+          if(45 < abs(ball.ang) && abs(ball.ang) < 75){  //後ろの角対策だよ(前進むよ) 横にボールあったら
+            while(abs(ball.ang) < 90){
               double ACval = ac.getAC_val();
               ball.getBallposition();
-              
-              if(Timer.read_ms() < 350){
-                MOTER.moveMoter(go_ang,goval,ACval,0);
-              }
-              else{
-                MOTER.moter_0();
-                flag = 1;
-              }
 
-              if(1100 < Timer.read_ms()){           
-                break;
-              }
-              if(line.getLINE_Vec() == 1){
+              MOTER.moveMoter(go_ang,goval,ACval,0);  //前進むよ
+              if(400 < Timer.read_ms()){
                 break;
               }
             }
-          }
-          else if(line_flag == 3){
-            Timer.reset();
-            go_ang = 0;
-            if(45 < abs(ball.ang) && abs(ball.ang) < 75){
-              while(abs(ball.ang) < 90){
-                double ACval = ac.getAC_val();
-                ball.getBallposition();
-
-                MOTER.moveMoter(go_ang,goval,ACval,0);
-                if(400 < Timer.read_ms()){
-                  break;
-                }
-              }
-            }
-          }
-
-          if(flag == 1){
-            AC_flag = 1;
-            flag = 0;
-            Timer_AC.reset();
           }
         }
 
