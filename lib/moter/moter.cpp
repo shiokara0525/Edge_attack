@@ -13,7 +13,7 @@ moter::moter(){
 
 
 
-void moter::moveMoter(angle ang,int val,double ac_val,int go_flag){  //モーター制御する関数
+void moter::moveMoter(angle ang,int val,double ac_val,int go_flag,LINE line){  //モーター制御する関数
   double g = 0;                //モーターの最終的に出る最終的な値の比の基準になる値
   double h = 0;
   double Mval[4] = {0,0,0,0};  //モーターの値×4
@@ -41,6 +41,9 @@ void moter::moveMoter(angle ang,int val,double ac_val,int go_flag){  //モータ
     }
     else if(go_flag == 4){  //左のストップかかってたら
       Mval[i] = -mSin[i] * mval_x + mCos[i] * back_val;
+    }
+    else if(go_flag == 5){
+      Mval[i] = -mSin[i] *(mval_x + line.Lvec_X * line_val)  + mCos[i] *(mval_y + line.Lvec_Y * line_val);
     }
     else if(go_flag == 5){
       moter_0();

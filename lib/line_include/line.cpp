@@ -33,8 +33,8 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
   int flag = 0; //ラインセンサの角度が0度をまたいでいるのかいないのかを判断するフラグをリセット
   int Lfirst[24]; //ラインセンサの範囲の開始点の番号を記録(配列が24つあるのは、間違って3つ以上の範囲が出てきても、バグが起こらないようにするため)
   int Llast[24]; //ラインセンサの範囲の終了点の番号を記録(配列が24つあるのは、間違って3つ以上の範囲が出てきても、バグが起こらないようにするため)
-  double Lvec_X = 0; //ラインセンサのX座標の和のベクトル
-  double Lvec_Y = 0; //ラインセンサのY座標の和のベクトル
+  Lvec_X = 0; //ラインセンサのX座標の和のベクトル
+  Lvec_Y = 0; //ラインセンサのY座標の和のベクトル
   double Lvec_X_move = 0; //ラインベクトルの移動量を記録する
   double Lvec_Y_move = 0; //ラインベクトルの移動量を記録する
   double Lsencer_Dir_ave = 0; //ラインセンサの範囲の角度を出すときのラインセンサの始点と終点の和の平均
@@ -225,7 +225,7 @@ int LINE::switchLineflag(angle linedir){
   linedir.to_range(-45,false);
   int line_flag = 0;
   for(int i = 0; i < 4; i++){  //角度を四つに区分して、それぞれどの区分にいるか判定するよ
-    if(-45 +(i * 90) < linedir.degrees && linedir.degrees < 45 +(i * 90)){  //それ以外の三つの区分(右、後ろ、左で判定してるよ)
+    if(-45 +(i * 90) < linedir.degree && linedir.degree < 45 +(i * 90)){  //それ以外の三つの区分(右、後ろ、左で判定してるよ)
       line_flag = i + 1;
     }
   }
@@ -241,8 +241,8 @@ float LINE::decideGoang(angle linedir,int line_flag){
   float goang = 0;
   linedir.to_range(-15,false);
   for(int i = 0; i < 12; i++){  //角度を12つに区分して、それぞれどの区分にいるか判定する
-    if(-15 +(i * 30) < linedir.degrees && linedir.degrees < 15 +(i * 30)){  //時計回りにどの区分にいるか判定してるよ
-      goang = line_switch(i,linedir.degrees,line_flag);
+    if(-15 +(i * 30) < linedir.degree && linedir.degree < 15 +(i * 30)){  //時計回りにどの区分にいるか判定してるよ
+      goang = line_switch(i,linedir.degree,line_flag);
     }
   }
   

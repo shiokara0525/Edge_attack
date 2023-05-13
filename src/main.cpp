@@ -137,7 +137,6 @@ void loop(){
 
     if(edge_flag != 0){
       if(1500 < Timer_edge.read_ms() || 45 < abs(ball.ang)){
-        ac.dir_target = Dir_target;
         Timer_edge.reset();
         edge_flag = 0;
       }
@@ -147,8 +146,8 @@ void loop(){
     }
 
     
-    if(270 < abs(go_ang.degrees)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
-      go_ang = (go_ang.degrees < 0 ? -270 : 270);
+    if(270 < abs(go_ang.degree)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
+      go_ang = (go_ang.degree < 0 ? -270 : 270);
     }
 
     go_ang.to_range(180,true);
@@ -158,6 +157,7 @@ void loop(){
 
 
   if(A == 30){  //ライン読むところ
+    A = 40;
     if(Line_flag == 1){  //ラインがオンだったら
       A_line = 1;
       angle linedir(line.Lvec_Dir,true);
@@ -185,6 +185,17 @@ void loop(){
 
         MOTER.moter_0();
         delay(75);
+
+        if(line_flag == 2 || line_flag == 4){  //後ろでライン踏んだら
+          if(45 < abs(ball.ang) && abs(ball.ang) < 90){  //後ろの角対策だよ(前進むよ) 横にボールあったら
+            A = 35;
+          }
+        }
+        else if(line_flag == 3){
+          if((60 < abs(ball.ang) && abs(ball.ang) < 120) && (60 < ball.far)){
+            A = 35;
+          }
+        }
       }
       else{  //連続でライン踏んでるとき
         if(1 < line.Lrange_num){  //ラインをまたいでいたらその真逆に動くよ
@@ -223,7 +234,7 @@ void loop(){
             ball.getBallposition();
             
             if(Timer.read_ms() < 350){  //下がるよ
-              MOTER.moveMoter(go_ang,goval,ACval,0);
+              MOTER.moveMoter(go_ang,goval,ACval,0,line);
             }
             else{  //止まるよ
               MOTER.moter_0();
@@ -235,33 +246,73 @@ void loop(){
             }
           }
         }
-        else if(line_flag == 3){  //後ろでライン踏んだら
-          timer Timer;
-          Timer.reset();
-
-          go_ang = 0;
-          if(45 < abs(ball.ang) && abs(ball.ang) < 75){  //後ろの角対策だよ(前進むよ) 横にボールあったら
-            while(abs(ball.ang) < 90){
-              double ACval = ac.getAC_val();
-              ball.getBallposition();
-
-              MOTER.moveMoter(go_ang,goval,ACval,0);  //前進むよ
-              if(400 < Timer.read_ms()){
-                break;
-              }
-            }
-          }
-        }
 
       }
       line_flag = 0;
     }
-    A = 40;
+  }
+
+
+  if(A == 35){
+    while(30 < abs(ball.ang)){
+      ball.getBallposition();
+      Line_flag = line.getLINE_Vec();
+      AC_val = ac.getAC_val();
+
+      int go_flag = 0;
+      double go_border[2];  //ボールの角度によって進む方向を変えるためのボーダーの変数(ラインに対して垂直な直線で進む角度の区分を分けるイメージ)
+      angle balldir(ball.ang,true);  //ボールの角度を入れるオブジェクト
+
+      if(line.Lvec_Dir < 0){
+        go_border[0] = line.Lvec_Dir;
+        go_border[1] = line.Lvec_Dir + 180;
+      }
+      else{
+        go_border[0] = line.Lvec_Dir - 180;
+        go_border[1] = line.Lvec_Dir;
+      }
+
+      balldir.to_range(go_border[0],false);  //ボールの角度をボーダーの範囲に収める(go_border[0] ~ go_border[1]+180)
+
+      if(go_border[0] < balldir.degree && balldir.degree < go_border[1]){  //ボールの角度を区分分けする
+        go_flag = 0;
+      }
+      else{
+        go_flag = 1;
+      }
+
+      go_ang = go_border[go_flag] + 90;  //進む角度決定
+      go_ang.to_range(180,true);  //進む角度を-180 ~ 180の範囲に収める
+
+
+      if(100 < abs(go_ang.degree)){
+        goval = 50;
+        MOTER.line_val = 2;
+      }
+      else if(abs(go_ang.degree) < 60){
+        goval = val_max;
+        MOTER.line_val = 2;
+      }
+      else{
+        goval = val_max;
+        MOTER.line_val = 0.15;
+      }
+
+
+      if(130 < abs(go_ang.degree) || Line_flag == 0){
+        break;
+      }
+      else{
+        MOTER.moveMoter(go_ang,goval,AC_val,5,line);
+      }
+    }
+
+    A = 10;
   }
 
 
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
-    MOTER.moveMoter(go_ang,goval,AC_val,stop_flag);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
+    MOTER.moveMoter(go_ang,goval,AC_val,stop_flag,line);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
     line.print();
     Serial.print(" 端 : ");
     Serial.print(edge_flag);
