@@ -222,7 +222,7 @@ void loop(){
   }
 
 
-  if(A == 35){
+  if(A == 35){  //端から端までライントレース
     while(30 < abs(ball.ang)){
       ball.getBallposition();
       Line_flag = line.getLINE_Vec();
@@ -280,7 +280,7 @@ void loop(){
   }
 
 
-  if(A == 36){
+  if(A == 36){  //前にボールがあるとき下がるやつだよ
     timer Timer;
     Timer.reset();
     if(edge_flag == 1){
@@ -297,7 +297,7 @@ void loop(){
       double ACval = ac.getAC_val();
       ball.getBallposition();
       
-      if(Timer.read_ms() < 350){  //下がるよ
+      if(Timer.read_ms() < 350){  //下がる(0.35秒)
         MOTER.moveMoter(go_ang,goval,ACval,0,line);
       }
       else{  //止まるよ
@@ -306,7 +306,7 @@ void loop(){
       }
 
       if(1100 < Timer.read_ms() || line.getLINE_Vec() == 1){
-        break;  //1.1秒経つorライン踏んだら
+        break;  //1.1秒経つorライン踏んだら抜けるよ
       }
     }
   }
@@ -314,10 +314,6 @@ void loop(){
 
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
     MOTER.moveMoter(go_ang,goval,AC_val,stop_flag,line);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
-    line.print();
-    Serial.print(" 端 : ");
-    Serial.print(edge_flag);
-    Serial.println();
 
     A = 10;
   }
