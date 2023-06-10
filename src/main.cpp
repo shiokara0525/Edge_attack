@@ -296,23 +296,18 @@ void OLED() {
   int OLED_ball_x = 0;
   int OLED_ball_y = 0;
 
-  int line_x = 0;
-  int line_y = 0;
+  float line_x = 0;
+  float line_y = 0;
 
-  int Ax = 0;
-  int Ay = 0;
-  int Bx = 0;
-  int By = 0;
+  float Ax = 0;
+  float Ay = 0;
+  float Bx = 0;
+  float By = 0;
 
   int OLED_line_ax = 0;
   int OLED_line_ay = 0;
   int OLED_line_bx = 0;
   int OLED_line_by = 0;
-
-  float b = 0;
-  float La = 0;
-  float Lb = 0;
-  float Lc = 0;
   
   while(1){
     if(timer_OLED.read_ms() > 500) //0.5秒ごとに実行(OLEDにかかれてある文字を点滅させるときにこの周期で点滅させる)
@@ -824,31 +819,38 @@ void OLED() {
       line.getLINE_Vec();
       //ラインの位置状況マップを表示する
       display.drawCircle(32, 32, 20, WHITE);  //○ 20
+      display.drawCircle(32, 32, 30, WHITE);  //○ 20
 
       //ラインの直線と円の交点の座標を求める
-      line_x = line.Lvec_Long * cos(line.Lrad);  //ラインのx座標
-      line_y = line.Lvec_Long * sin(line.Lrad);  //ラインのy座標
+      line_y = line.Lvec_Long * cos(line.Lrad);  //ラインのx座標
+      line_x = line.Lvec_Long * sin(line.Lrad);  //ラインのy座標
 
-      b = line_y - tan(line.Lrad) * line_x;  //y = tanΘx + b の解の公式のb
+      Ax = line_x - line_y * sqrt(9 - pow(line.Lvec_Long, 2)) / line.Lvec_Long;
+      Ay = line_y + line_x * sqrt(9 - pow(line.Lvec_Long, 2)) / line.Lvec_Long;
+      Bx = line_x + line_y * sqrt(9 - pow(line.Lvec_Long, 2)) / line.Lvec_Long;
+      By = line_y - line_x * sqrt(9 - pow(line.Lvec_Long, 2)) / line.Lvec_Long;
 
-      La = 1 + pow(tan(line.Lrad), 2);    //解の公式のa
-      Lb = tan(line.Lrad) * b;            //解の公式のb
-      Lc = pow(b, 2) - 900;               //解の公式のc
-
-      Ax = (-Lb + sqrt(pow(Lb, 2) - 4 * La * Lc)) / (2 * La);  //A点のx座標
-      Ay = tan(line.Lrad) * Ax + b;                            //A点のy座標
-
-      Bx = (-Lb - sqrt(pow(Lb, 2) - 4 * La * Lc)) / (2 * La);  //B点のx座標
-      By = tan(line.Lrad) * Bx + b;                            //B点のy座標
-
+      Serial.print(line_x);
+      Serial.print(" ");
+      Serial.print(line_y);
+      Serial.print("  ");
+      Serial.print(Ax);
+      Serial.print(" ");
+      Serial.print(Ay);
+      Serial.print(" ");
+      Serial.print(Bx);
+      Serial.print(" ");
+      Serial.println(By);
       //ラインの線の座標をOLEDでの座標に変換(-1~1の値を0~60の値に変換)
-      OLED_line_ax = map(Ax, -1.5, 1.5, 0, 60);  //ラインの線のA点のx座標
-      OLED_line_ay = map(Ay, -1.5, 1.5, 0, 60);  //ラインの線のA点のy座標
-      OLED_line_bx = map(Bx, -1.5, 1.5, 0, 60);  //ラインの線のB点のx座標
-      OLED_line_by = map(By, -1.5, 1.5, 0, 60);  //ラインの線のB点のy座標
+      OLED_line_ax = map(Ax, -3, 3, 0, 60);  //ラインの線のA点のx座標
+      OLED_line_ay = map(Ay, 3, -3, 0, 60);  //ラインの線のA点のy座標
+      OLED_line_bx = map(Bx, -3, 3, 0, 60);  //ラインの線のB点のx座標
+      OLED_line_by = map(By, 3, -3, 0, 60);  //ラインの線のB点のy座標
 
-      //ラインの線を表示
-      display.drawLine((OLED_line_ax + 2), (62 - OLED_line_ay), (OLED_line_bx + 2), (62 - OLED_line_by), WHITE);
+      if(line.LINE_on == 1){  //ラインがロボットの下にある
+        //ラインの線を表示
+        display.drawLine((OLED_line_ax + 2), (62 - OLED_line_ay), (OLED_line_bx + 2), (62 - OLED_line_by), WHITE);
+      }
 
       //"Line"と表示する
       display.setTextSize(2);
