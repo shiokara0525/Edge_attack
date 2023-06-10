@@ -833,7 +833,7 @@ void OLED() {
       Serial.print(line_x);
       Serial.print(" ");
       Serial.print(line_y);
-      Serial.print("  ");
+      Serial.print(" | ");
       Serial.print(Ax);
       Serial.print(" ");
       Serial.print(Ay);
@@ -841,10 +841,11 @@ void OLED() {
       Serial.print(Bx);
       Serial.print(" ");
       Serial.println(By);
+
       //ラインの線の座標をOLEDでの座標に変換(-1~1の値を0~60の値に変換)
-      OLED_line_ax = map(Ax, -3, 3, 0, 60);  //ラインの線のA点のx座標
+      OLED_line_ax = map(Ax, 3, -3, 60, 0);  //ラインの線のA点のx座標
       OLED_line_ay = map(Ay, 3, -3, 0, 60);  //ラインの線のA点のy座標
-      OLED_line_bx = map(Bx, -3, 3, 0, 60);  //ラインの線のB点のx座標
+      OLED_line_bx = map(Bx, 3, -3, 60, 0);  //ラインの線のB点のx座標
       OLED_line_by = map(By, 3, -3, 0, 60);  //ラインの線のB点のy座標
 
       if(line.LINE_on == 1){  //ラインがロボットの下にある

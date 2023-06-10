@@ -102,6 +102,8 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
     // Serial.print(data_ave[i]); //ラインセンサの値をシリアルモニタに表示
     // Serial.print(" ");
   }
+  // Serial.println();
+
   data_ave[4] = 0;
   data_ave[8] = 0;
   data_ave[20] = 0;
