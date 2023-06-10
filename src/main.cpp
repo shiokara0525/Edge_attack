@@ -73,6 +73,8 @@ timer timer_OLED; //タイマーの宣言(OLED用)
 void setup(){
   Serial.begin(9600);  //シリアルプリントできるよ
   Wire.begin();  //I2CできるよTac.dir_target;
+  OLED_setup();
+  OLED();
   A = 10;
 }
 
