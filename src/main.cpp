@@ -59,7 +59,7 @@ void OLED();
 int val_max = 150;
 int RA_size = 0;
 
-Ball ball;  //ボールのオブジクトだよ(基本的にボールの位置取得は全部ここ)
+BALL ball;  //ボールのオブジクトだよ(基本的にボールの位置取得は全部ここ)
 AC ac;      //姿勢制御のオブジェクトだよ(基本的に姿勢制御は全部ここ)
 LINE line;  //ラインのオブジェクトだよ(基本的にラインの判定は全部ここ)
 moter MOTER;
@@ -72,6 +72,9 @@ timer timer_OLED; //タイマーの宣言(OLED用)
 
 void setup(){
   Serial.begin(9600);  //シリアルプリントできるよ
+  Serial8.begin(115200);
+  ac.setup();
+  line.setup();
   Wire.begin();  //I2CできるよTac.dir_target;
   OLED_setup();
   OLED();
@@ -95,12 +98,7 @@ void loop(){
     ball_flag = ball.getBallposition();  //ボールの位置取得
     AC_val = ac.getAC_val();             //姿勢制御の値入手
     Line_flag = line.getLINE_Vec();      //ライン踏んでるか踏んでないかを判定
-    if(ball_flag == 0){  //ボール見てなかったら
-      A = 15;  //止まるとこ
-    }
-    else{  //ボール見てたら
-      A = 20;  //進む角度決めるとこ
-    }
+    A = 20;
   }
 
 
@@ -108,23 +106,29 @@ void loop(){
     while(1){
       MOTER.moter_0();
       ball.getBallposition();
-      if(ball.far_x != 0 || ball.far_y != 0){
-        break;
-      }
     }
     A = 30;
   }
 
 
   if(A == 20){  //進む角度決めるとこ
-    double ang_defference = RA_size / ball.far;  //どれくらい急に回り込みするか(ボールが近くにあるほど急に回り込みする)
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
-
-    if(ball.ang < 0){  //ここで進む角度決めてるよ!(ボールの角度が負の場合)
-      go_ang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : -45) * (0.2 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
+    float ball_far = ball.far;
+    if(ball_far < 60){
+      ball_far = 60;
     }
-    else{  //(ボールの角度が正の場合)
-      go_ang = ball.ang + (abs(ball.ang)<90 ? ball.ang*0.5 : 45) * (0.2 + ang_defference);  //ボールの角度と距離から回り込む角度算出してるよ!
+    else if(ball_far < 80){
+      ball_far = 80;
+    }
+    else{
+      ball_far = 100;
+    }
+
+    if(ball.ang < 0){
+      go_ang = ball.ang + (RA_size / ball_far) * (90 < abs(ball.ang) ? -90 : ball.ang);
+    }
+    else{
+      go_ang = ball.ang + (RA_size / ball_far) * (90 < ball.ang ? 90 : ball.ang);
     }
 
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
@@ -182,16 +186,16 @@ void loop(){
         MOTER.moter_0();
         delay(75);
 
-        if(line_flag == 2 || line_flag == 4){  //後ろでライン踏んだら
-          if(45 < abs(ball.ang) && abs(ball.ang) < 90){  //後ろの角対策だよ(前進むよ) 横にボールあったら
-            A = 35;  //ライントレースするよ
-          }
-        }
-        else if(line_flag == 3){
-          if((60 < abs(ball.ang) && abs(ball.ang) < 120) && (60 < ball.far)){
-            A = 35;  //ライントレースするよ
-          }
-        }
+        // if(line_flag == 2 || line_flag == 4){  //後ろでライン踏んだら
+        //   if(45 < abs(ball.ang) && abs(ball.ang) < 90){  //後ろの角対策だよ(前進むよ) 横にボールあったら
+        //     A = 35;  //ライントレースするよ
+        //   }
+        // }
+        // else if(line_flag == 3){
+        //   if((60 < abs(ball.ang) && abs(ball.ang) < 120) && (60 < ball.far)){
+        //     A = 35;  //ライントレースするよ
+        //   }
+        // }
       }
       else{  //連続でライン踏んでるとき
         if(1 < line.Lrange_num){  //ラインをまたいでいたらその真逆に動くよ
@@ -214,9 +218,9 @@ void loop(){
       if(A_line != B_line){  //前回までライン踏んでたら
         B_line = A_line;  //今回はライン踏んでないよ
           
-        if(line_flag == 1){  //前方向ライン踏んだ時
-          A = 36;  //後ろに下がるよ
-        }
+        // if(line_flag == 1){  //前方向ライン踏んだ時
+        //   A = 36;  //後ろに下がるよ
+        // }
 
       }
       line_flag = 0;
@@ -329,7 +333,20 @@ void loop(){
 
 
 /*----------------------------------------------------------------いろいろ関数-----------------------------------------------------------*/
+void serialEvent8(){
+  int x = 0;
+  int y = 0;
+  int sawa = Serial8.read();
+  if(sawa == 255){
+    while(!Serial8.available());
+    x = Serial8.read() - 127;
+    while(!Serial8.available());
+    y = Serial8.read() - 127;
+  }
 
+  x = ball.ball_x.demandAve(x);
+  y = ball.ball_y.demandAve(y);
+}
 
 
 
