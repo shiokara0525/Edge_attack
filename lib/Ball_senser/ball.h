@@ -27,7 +27,7 @@ class BALL{
       x_pos = 130 - x;
       y_pos = 130 - y;
       ang = degrees(atan2(y,x));
-      far = sqrt(x_pos*x_pos + y_pos*y_pos) - 50;
+      far = sqrt(x_pos*x_pos + y_pos*y_pos) - 100;
       return flag;
     }
     void print(){

@@ -12,6 +12,7 @@
 #include <Adafruit_SSD1306.h>
 #include <EEPROM.h>
 #include <Encoder.h>
+#include<Cam.h>
 
 /*---------------------------------------------------ディスプレイの宣言-----------------------------------------------------------------------------------*/
 
@@ -66,6 +67,7 @@ moter MOTER;
 timer Timer_edge;
 us US;
 timer timer_OLED; //タイマーの宣言(OLED用)
+Cam cam;
 
 /*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
 
@@ -89,14 +91,13 @@ void loop(){
   angle go_ang(0,true);
   
   int Line_flag = 0;  //ライン踏んでるか踏んでないか
-  int ball_flag = 0;  //ボールがコート上にあるかないか
   int stop_flag = 0;  //ラインをちょっと踏んでるときにどんな動きをするかを決める変数
   int goval = val_max;  //動くスピード決定
 
 
   if(A == 10){  //情報入手
-    ball_flag = ball.getBallposition();  //ボールの位置取得
-    AC_val = ac.getAC_val();             //姿勢制御の値入手
+    ball.getBallposition();  //ボールの位置取得
+    AC_val = cam.getCamdata(ac.getnowdir());             //姿勢制御の値入手
     Line_flag = line.getLINE_Vec();      //ライン踏んでるか踏んでないかを判定
     A = 20;
   }
@@ -115,7 +116,7 @@ void loop(){
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
     float ball_far = ball.far;
     if(ball_far < 60){
-      ball_far = 60;
+      ball_far = 38;
     }
     else if(ball_far < 80){
       ball_far = 80;
@@ -186,16 +187,16 @@ void loop(){
         MOTER.moter_0();
         delay(75);
 
-        // if(line_flag == 2 || line_flag == 4){  //後ろでライン踏んだら
-        //   if(45 < abs(ball.ang) && abs(ball.ang) < 90){  //後ろの角対策だよ(前進むよ) 横にボールあったら
-        //     A = 35;  //ライントレースするよ
-        //   }
-        // }
-        // else if(line_flag == 3){
-        //   if((60 < abs(ball.ang) && abs(ball.ang) < 120) && (60 < ball.far)){
-        //     A = 35;  //ライントレースするよ
-        //   }
-        // }
+        if(line_flag == 2 || line_flag == 4){  //後ろでライン踏んだら
+          if(30 < abs(ball.ang) && abs(ball.ang) < 120){  //後ろの角対策だよ(前進むよ) 横にボールあったら
+            A = 35;  //ライントレースするよ
+          }
+        }
+        else if(line_flag == 3){
+          if((60 < abs(ball.ang) && abs(ball.ang) < 120) && (40 < ball.far)){
+            A = 35;  //ライントレースするよ
+          }
+        }
       }
       else{  //連続でライン踏んでるとき
         if(1 < line.Lrange_num){  //ラインをまたいでいたらその真逆に動くよ
@@ -319,7 +320,7 @@ void loop(){
 
 
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
-    MOTER.moveMoter(go_ang,goval,AC_val,stop_flag,line);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
+    MOTER.moveMoter(go_ang,goval,cam.P,stop_flag,line);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
 
     A = 10;
   }
