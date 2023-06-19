@@ -7,10 +7,10 @@ Cam::Cam(){
 }
 
 
-int Cam::getCamdata(float dir){
+int Cam::getCamdata(float dir,float ball_ang){
     pixy.ccc.getBlocks();
 
-    if (pixy.ccc.numBlocks){
+    if(pixy.ccc.numBlocks){
         if(B != 1){
             B = 1;
         }
@@ -28,22 +28,22 @@ int Cam::getCamdata(float dir){
         size = size_max;
         flag = 1;
 
-        P = (150 - x);
+        if(50 < abs(ball_ang)){
+            P = -dir;    
+        }
+        else{
+            if(abs(dir) < 70){
+                P = (150 - x);
+            }
+            else{
+                P = -dir;
+            }
+        }
     }
     else{
         if(B != 0){
             B = 0;
-            if(315 < x){
-                ac_terget = dir - 90;
-            }
-            else if(x < 35){
-                ac_terget = dir + 90;
-            }
-            else{
-                ac_terget = 0;
-            }
-            Serial.print("dir_target : ");
-            Serial.print(dir);
+            ac_terget = dir;
         }
         flag = 0;
         P = (ac_terget - dir) * 2;

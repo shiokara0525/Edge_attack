@@ -97,7 +97,7 @@ void loop(){
 
   if(A == 10){  //情報入手
     ball.getBallposition();  //ボールの位置取得
-    AC_val = cam.getCamdata(ac.getnowdir());             //姿勢制御の値入手
+    AC_val = cam.getCamdata(ac.getnowdir(),ball.ang);             //姿勢制御の値入手
     Line_flag = line.getLINE_Vec();      //ライン踏んでるか踏んでないかを判定
     A = 20;
   }
@@ -116,13 +116,13 @@ void loop(){
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
     float ball_far = ball.far;
     if(ball_far < 60){
-      ball_far = 38;
+      ball_far = 30;
     }
     else if(ball_far < 80){
-      ball_far = 80;
+      ball_far = 85;
     }
     else{
-      ball_far = 100;
+      ball_far = 120;
     }
 
     if(ball.ang < 0){
@@ -187,16 +187,16 @@ void loop(){
         MOTER.moter_0();
         delay(75);
 
-        if(line_flag == 2 || line_flag == 4){  //後ろでライン踏んだら
-          if(30 < abs(ball.ang) && abs(ball.ang) < 120){  //後ろの角対策だよ(前進むよ) 横にボールあったら
-            A = 35;  //ライントレースするよ
-          }
-        }
-        else if(line_flag == 3){
-          if((60 < abs(ball.ang) && abs(ball.ang) < 120) && (40 < ball.far)){
-            A = 35;  //ライントレースするよ
-          }
-        }
+        // if(line_flag == 2 || line_flag == 4){  //後ろでライン踏んだら
+        //   if(30 < abs(ball.ang) && abs(ball.ang) < 120){  //後ろの角対策だよ(前進むよ) 横にボールあったら
+        //     A = 35;  //ライントレースするよ
+        //   }
+        // }
+        // else if(line_flag == 3){
+        //   if((60 < abs(ball.ang) && abs(ball.ang) < 120) && (40 < ball.far)){
+        //     A = 35;  //ライントレースするよ
+        //   }
+        // }
       }
       else{  //連続でライン踏んでるとき
         if(1 < line.Lrange_num){  //ラインをまたいでいたらその真逆に動くよ
@@ -262,7 +262,7 @@ void loop(){
 
 
       if(100 < abs(go_ang.degree)){
-        goval = 50;
+        goval = 70;
         MOTER.line_val = 2;
       }
       else if(abs(go_ang.degree) < 60){
@@ -275,9 +275,12 @@ void loop(){
       }
 
 
-      if(130 < abs(go_ang.degree) || Line_flag == 0){
+      if((130 < abs(go_ang.degree) || Line_flag == 0) && (150 < abs(ball.ang))){
         break;
       }
+      // else if(go_border[go_flag] - 5 < ball.ang || ball.ang < go_border[go_flag] + 5){
+      //   break;
+      // }
       else{
         MOTER.moveMoter(go_ang,goval,AC_val,5,line);
       }

@@ -13,7 +13,7 @@ class Cam{
         float ang;
         float size;
         int flag;
-        int getCamdata(float);
+        int getCamdata(float,float);
         void print();
         float P = 0;
 };
