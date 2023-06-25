@@ -54,7 +54,10 @@ const int Encoder_B = 16;  //エンコーダーのピン番号
 Encoder myEnc(17, 16);  //エンコーダのピン番号
 const double pi = 3.1415926535897932384;  //円周率
 
-void OLED();
+int goDir;  //loop関数ないしか使えないangle go_ang.degressの値をぶち込んでグローバルに使うために作った税
+
+void OLED_set();  //ロボットが動く前の設定画面
+void OLED_moving();  //ロボットが動いてる間の画面
 
 int val_max = 140;
 
@@ -87,7 +90,7 @@ void setup(){
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
   }
-  OLED();
+  OLED_set();
   A = 10;
 }
 
@@ -270,14 +273,17 @@ void loop(){
   if(digitalRead(Tact_Switch) == LOW){
     MOTER.moter_0();
     toogle = digitalRead(Toggle_Switch);
-    OLED();
+    OLED_set();
   }
+
+  goDir = go_ang.degrees;
+  OLED_moving();  //デバック用
 }
 
 
 /*----------------------------------------------------------------いろいろ関数-----------------------------------------------------------*/
 
-void OLED() {
+void OLED_set() {
   //OLEDの初期化
   display.display();
   display.clearDisplay();
@@ -1251,4 +1257,56 @@ void OLED() {
       }
     }
   }
+}
+
+void OLED_moving(){
+  //OLEDの初期化
+  display.display();
+  display.clearDisplay();
+
+  //テキストサイズと色の設定
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  
+  display.setCursor(0,0);  //1列目
+  display.println("Dir");  //現在向いてる角度
+  display.setCursor(30,0);
+  display.println(":");
+  display.setCursor(36,0);
+  display.println(int(ac.getnowdir()));    //現在向いてる角度を表示
+
+  display.setCursor(0,10);  //2列目
+  display.println("goDir");  //この中に変数名を入力
+  display.setCursor(30,10);
+  display.println(":");
+  display.setCursor(36,10);
+  display.println(goDir);    //この中に知りたい変数を入力
+
+  display.setCursor(0,20); //3列目
+  display.println("");  //この中に変数名を入力
+  display.setCursor(30,20);
+  display.println(":");
+  display.setCursor(36,20);
+  display.println();    //この中に知りたい変数を入力
+
+  display.setCursor(0,30); //4列目
+  display.println("");  //この中に変数名を入力
+  display.setCursor(30,30);
+  display.println(":");
+  display.setCursor(36,30);
+  display.println();    //この中に知りたい変数を入力
+
+  display.setCursor(0,40); //5列目
+  display.println("");  //この中に変数名を入力
+  display.setCursor(30,40);
+  display.println(":");
+  display.setCursor(36,40);
+  display.println();    //この中に知りたい変数を入力
+
+  display.setCursor(0,50); //6列目
+  display.println("");  //この中に変数名を入力
+  display.setCursor(30,50);
+  display.println(":");
+  display.setCursor(36,50);
+  display.println();    //この中に知りたい変数を入力
 }
