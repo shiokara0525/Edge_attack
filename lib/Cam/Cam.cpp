@@ -7,10 +7,10 @@ Cam::Cam(){
 }
 
 
-int Cam::getCamdata(float dir,float ball_ang){
+int Cam::getCamdata(float dir,float ball_ang,int flag){
     pixy.ccc.getBlocks();
 
-    if(pixy.ccc.numBlocks){
+    if(pixy.ccc.numBlocks && flag == 0){
         if(B != 1){
             B = 1;
         }
@@ -26,17 +26,16 @@ int Cam::getCamdata(float dir,float ball_ang){
         x = pixy.ccc.blocks[num].m_x;
         ang = pixy.ccc.blocks[num].m_angle;
         size = size_max;
-        flag = 1;
 
-        if(50 < abs(ball_ang)){
-            P = -dir;    
+        if(30 < abs(ball_ang)){
+            P = -dir;
         }
         else{
             if(abs(dir) < 70){
-                P = (150 - x);
+                P = 0.75 * (150 - x);
             }
             else{
-                P = -dir;
+                P = -dir * 1.3;
             }
         }
     }
@@ -44,18 +43,27 @@ int Cam::getCamdata(float dir,float ball_ang){
         if(B != 0){
             B = 0;
             ac_terget = dir;
+            tim_cam.reset();
         }
-        flag = 0;
-        P = (ac_terget - dir) * 2;
-        Serial.print(dir);
+        if(500 < tim_cam.read_ms()){
+            ac_terget = 0;
+        }
+        P = (ac_terget - dir);
     }
-    return flag;
+
+    if(pixy.ccc.numBlocks == 0){
+        flag_1 = 0;
+    }
+    else{
+        flag_1 = 1;
+    }
+    return flag_1;
 }
 
 
 
 void Cam::print(){
-    if(flag == 0){
+    if(flag_1 == 0){
         Serial.println("No block detected");
     }
     else{

@@ -39,6 +39,8 @@ const int Toggle_Switch = 14;  //スイッチのピン番号
 /*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
 
 int flag = 0;
+int flag_ac = 0;
+timer ac_timer;
 int A = 0;  //どのチャプターに移動するかを決める変数
 
 int A_line = 0;  //ライン踏んでるか踏んでないか
@@ -49,6 +51,7 @@ float Dir_target = 0;
 //上二つの変数を上手い感じにこねくり回して最初に踏んだラインの位置を記録するよ(このやり方は部長に教えてもらったよ)
 
 int line_flag = 0;    //最初にどんな風にラインの判定したか記録
+int line_flag_2 = 0;
 int edge_flag = 0; //ラインの端にいたときにゴールさせる確率を上げるための変数だよ(なんもなかったら0,右の端だったら1,左だったら2)
 
 const int Tact_Switch = 15;  //スイッチのピン番号 
@@ -77,7 +80,6 @@ void setup(){
   Serial8.begin(115200);
   ac.setup();
   line.setup();
-  Wire.begin();  //I2CできるよTac.dir_target;
   OLED_setup();
   OLED();
   A = 10;
@@ -93,11 +95,12 @@ void loop(){
   int Line_flag = 0;  //ライン踏んでるか踏んでないか
   int stop_flag = 0;  //ラインをちょっと踏んでるときにどんな動きをするかを決める変数
   int goval = val_max;  //動くスピード決定
+  int cam_flag = 0;
 
 
   if(A == 10){  //情報入手
     ball.getBallposition();  //ボールの位置取得
-    AC_val = cam.getCamdata(ac.getnowdir(),ball.ang);             //姿勢制御の値入手
+    cam_flag = cam.getCamdata(ac.getnowdir(),ball.ang,flag_ac);  //姿勢制御の値入手
     Line_flag = line.getLINE_Vec();      //ライン踏んでるか踏んでないかを判定
     A = 20;
   }
@@ -115,14 +118,17 @@ void loop(){
   if(A == 20){  //進む角度決めるとこ
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
     float ball_far = ball.far;
-    if(ball_far < 60){
-      ball_far = 30;
+    if(ball_far < 50){
+      ball_far = 40;
+    }
+    else if(ball_far < 65){
+      ball_far = 55;
     }
     else if(ball_far < 80){
-      ball_far = 85;
+      ball_far = 70;
     }
     else{
-      ball_far = 120;
+      ball_far = 90;
     }
 
     if(ball.ang < 0){
@@ -133,18 +139,6 @@ void loop(){
     }
 
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
-
-
-
-    if(edge_flag != 0){
-      if(1500 < Timer_edge.read_ms() || 45 < abs(ball.ang)){
-        Timer_edge.reset();
-        edge_flag = 0;
-      }
-      else{
-        go_ang = ball.ang;
-      }
-    }
 
     
     if(270 < abs(go_ang.degree)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
@@ -162,51 +156,24 @@ void loop(){
     if(Line_flag == 1){  //ラインがオンだったら
       A_line = 1;
       angle linedir(line.Lvec_Dir,true);
+      angle linedir_2(line.Lvec_Dir + ac.dir,true);
+      linedir_2.to_range(180,true);
 
       if(A_line != B_line){  //前回はライン踏んでなくて今回はライン踏んでるよ～ってとき(ここはかなり重要!)
         B_line = A_line;
+        flag_ac = 1;
 
         line_flag = line.switchLineflag(linedir);
+        line_flag_2 = line.switchLineflag(linedir_2);
 
-        if(line_flag == 2){
-          Timer_edge.reset();
-          edge_flag = 1;
-        }
-        else if(line_flag == 4){
-          Timer_edge.reset();
-          edge_flag = 2;
-        }
-
-        if(line.Lrange_num == 1){  //ラインをちょっと踏んでるとき(ここでは緊急性が高くないとする)
-          stop_flag = line_flag;   //緊急性高くないし、まともにライン踏んでるから緩めの処理するよ
-        }
-        else{  //斜めに踏んでるか、またはラインをまたいでるとき(緊急性が高いとするよ,進む角度ごと変えるよ)
-          go_ang = line.decideGoang(linedir,line_flag);
-        }
+        go_ang = line.decideGoang(linedir,line_flag);
 
         MOTER.moter_0();
         delay(75);
-
-        // if(line_flag == 2 || line_flag == 4){  //後ろでライン踏んだら
-        //   if(30 < abs(ball.ang) && abs(ball.ang) < 120){  //後ろの角対策だよ(前進むよ) 横にボールあったら
-        //     A = 35;  //ライントレースするよ
-        //   }
-        // }
-        // else if(line_flag == 3){
-        //   if((60 < abs(ball.ang) && abs(ball.ang) < 120) && (40 < ball.far)){
-        //     A = 35;  //ライントレースするよ
-        //   }
-        // }
       }
       else{  //連続でライン踏んでるとき
-        if(1 < line.Lrange_num){  //ラインをまたいでいたらその真逆に動くよ
-          go_ang = line.decideGoang(linedir,line_flag);
-          stop_flag = 0;
-        }
-        else{
-          stop_flag = line.switchLineflag(linedir);
-          line_flag = stop_flag;
-        }
+        go_ang = line.decideGoang(linedir,line_flag);
+        stop_flag = 0;
       }
 
 
@@ -218,11 +185,11 @@ void loop(){
       A_line = 0;
       if(A_line != B_line){  //前回までライン踏んでたら
         B_line = A_line;  //今回はライン踏んでないよ
-          
-        // if(line_flag == 1){  //前方向ライン踏んだ時
-        //   A = 36;  //後ろに下がるよ
-        // }
 
+        if(cam_flag == 0 && line_flag_2 == 1){  //前方向ライン踏んだ時
+          A = 36;  //後ろに下がるよ
+        }
+        flag_ac = 0;
       }
       line_flag = 0;
     }
@@ -304,11 +271,11 @@ void loop(){
     }
 
     while(abs(ball.ang) < 60){  //前方向にボールがあるとき
-      double ACval = ac.getAC_val();
+      cam.getCamdata(ac.getnowdir(),ball.ang,0);
       ball.getBallposition();
       
-      if(Timer.read_ms() < 350){  //下がる(0.35秒)
-        MOTER.moveMoter(go_ang,goval,ACval,0,line);
+      if(Timer.read_ms() < 250){  //下がる(0.35秒)
+        MOTER.moveMoter(go_ang,goval,cam.P,0,line);
       }
       else{  //止まるよ
         MOTER.moter_0();
@@ -319,6 +286,7 @@ void loop(){
         break;  //1.1秒経つorライン踏んだら抜けるよ
       }
     }
+    A = 10;
   }
 
 
