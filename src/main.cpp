@@ -46,6 +46,7 @@ long old_encVal = 0;  //エンコーダーの過去値を示す変数
 int line_flag = 0;    //最初にどんな風にラインの判定したか記録
 int edge_flag = 0; //ラインの端にいたときにゴールさせる確率を上げるための変数だよ(なんもなかったら0,右の端だったら1,左だったら2)
 int side_flag = 0;
+int NoneM_flag = 0;  //モーターを動かさずにプログラムを進行させるためのフラグ(モーターを動かすときは0,動かさないときは1にする)
 
 const int Tact_Switch = 15;  //スイッチのピン番号 
 const int Toggle_Switch = 14;  //スイッチのピン番号
@@ -314,6 +315,8 @@ void OLED_set() {
   int OLED_line_ay = 0;
   int OLED_line_bx = 0;
   int OLED_line_by = 0;
+
+  NoneM_flag = 0;  //モーター動作ありのフラグ
   
   while(1){
     if(timer_OLED.read_ms() > 500) //0.5秒ごとに実行(OLEDにかかれてある文字を点滅させるときにこの周期で点滅させる)
@@ -680,10 +683,10 @@ void OLED_set() {
         }
       }
     }
-    else if(A_OLED == 15)  //ボタン押したらロボット動作開始
+    else if(A_OLED == 15)  //トグルを傾けたらロボット動作開始
     {
       if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
-        Button_select = 0;  //ボタンの選択(next)をデフォルトにする
+        Button_select = 1;  //ボタンの選択(setDir)をデフォルトにする
         B_OLED = A_OLED;
       };
 
@@ -706,7 +709,7 @@ void OLED_set() {
       //角度を再設定させるか、もとの選択画面に戻るかを決めるスイッチについての設定
       display.setTextSize(1);
       display.setTextColor(WHITE);
-      if(Button_select == 1)  //exitが選択されていたら
+      if(Button_select == 0)  //exitが選択されていたら
       {
         if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
           display.setTextColor(BLACK, WHITE);
@@ -715,11 +718,11 @@ void OLED_set() {
           display.setTextColor(WHITE);
         }
       }
-      display.setCursor(0,56);
+      display.setCursor(0,55);
       display.println("Exit");
 
       display.setTextColor(WHITE);
-      if(Button_select == 0)  //nextが選択されていたら（デフォルトはこれ）
+      if(Button_select == 1)  //setDirが選択されていたら（デフォルトはこれ）
       {
         if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
           display.setTextColor(BLACK, WHITE);
@@ -728,8 +731,21 @@ void OLED_set() {
           display.setTextColor(WHITE);
         }
       }
-      display.setCursor(56,55);
-      display.println("SetDir Again");
+      display.setCursor(50,55);
+      display.println("SetDir");
+
+      display.setTextColor(WHITE);
+      if(Button_select == 2)  //noneMが選択されていたら（デフォルトはこれ）
+      {
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+      }
+      display.setCursor(92,55);
+      display.println("NoneM");
 
       //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
       if(aa == 0){
@@ -738,13 +754,18 @@ void OLED_set() {
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          if(Button_select == 0)  //SetDir Againが選択されていたら
+          
+          if(Button_select == 0)  //exitが選択されていたら
+          {
+            A_OLED = 0;  //メニュー画面に戻る
+          }
+          else if(Button_select == 1)  //SetDir Againが選択されていたら
           {
             ac.setup_2();  //姿勢制御の値リセットするぜい
           }
-          else if(Button_select == 1)  //exitが選択されていたら
+          else if(Button_select == 2)  //NoneMが選択されていたら
           {
-            A_OLED = 0;  //メニュー画面に戻る
+            NoneM_flag = 1;  //モーター動作なしバージョンのフラグを立てる
           }
           aa = 0;
         }
@@ -1191,7 +1212,7 @@ void OLED_set() {
             }
           }
         }
-        else if(A_OLED == 10 || A_OLED == 15)  //スタート画面にいるときはButton_selectを変更する
+        else if(A_OLED == 10)  //スタート画面にいるときはButton_selectを変更する
         {
           if(new_encVal > old_encVal)  //回転方向を判定
           {
@@ -1200,6 +1221,21 @@ void OLED_set() {
           else if(new_encVal < old_encVal)
           {
             Button_select = 1;  //exit
+          }
+        }
+        else if(A_OLED == 15)
+        {
+          if(new_encVal > old_encVal)  //回転方向を判定
+          {
+            if(Button_select < 2){
+              Button_select++;  //next
+            }
+          }
+          else if(new_encVal < old_encVal)
+          {
+            if(Button_select  > 0){
+              Button_select--;  //next
+            }
           }
         }
         else if(A_OLED == 20)  //ラインの閾値を変更する
