@@ -35,6 +35,8 @@ long old_encVal = 0;  //エンコーダーの過去値を示す変数
 unsigned int address = 0x00;  //EEPROMのアドレス
 int toogle = 0;  //トグルスイッチの値を記録（トグルを引くときに使う）
 const int Toggle_Switch = 14;  //スイッチのピン番号
+int goDir;  //loop関数ないしか使えないangle go_ang.degressの値をぶち込んでグローバルに使うために作った税
+void OLED_moving();  //ロボットが動いてる間の画面
 
 /*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
 
@@ -56,7 +58,7 @@ int edge_flag = 0; //ラインの端にいたときにゴールさせる確率�
 
 const int Tact_Switch = 15;  //スイッチのピン番号 
 const double pi = 3.1415926535897932384;  //円周率
-
+float ball_Far = 0;
 void OLED_setup();
 void OLED();
 
@@ -101,6 +103,7 @@ void loop(){
   if(A == 10){  //情報入手
     ball.getBallposition();  //ボールの位置取得
     cam_flag = cam.getCamdata(ac.getnowdir(),ball.ang,flag_ac);  //姿勢制御の値入手
+    
     Line_flag = line.getLINE_Vec();      //ライン踏んでるか踏んでないかを判定
     A = 20;
   }
@@ -118,19 +121,20 @@ void loop(){
   if(A == 20){  //進む角度決めるとこ
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
     float ball_far = ball.far;
-    if(ball_far < 50){
+    if(ball_far < 40){
       ball_far = 40;
     }
     else if(ball_far < 65){
-      ball_far = 55;
+      ball_far = 60;
     }
     else if(ball_far < 80){
-      ball_far = 70;
+      ball_far = 80;
     }
     else{
-      ball_far = 90;
+      ball_far = 80;
     }
 
+    ball_Far = ball_far;
     if(ball.ang < 0){
       go_ang = ball.ang + (RA_size / ball_far) * (90 < abs(ball.ang) ? -90 : ball.ang);
     }
@@ -301,6 +305,9 @@ void loop(){
     toogle = digitalRead(Toggle_Switch);
     OLED();
   }
+
+  goDir = go_ang.degree;
+  OLED_moving();  //デバック用
 }
 
 
@@ -340,6 +347,7 @@ void OLED_setup(){
 
 
 void OLED() {
+
   //OLEDの初期化
   display.display();
   display.clearDisplay();
@@ -1208,4 +1216,56 @@ void OLED() {
       }
     }
   }
+}
+
+void OLED_moving(){
+  //OLEDの初期化
+  display.display();
+  display.clearDisplay();
+
+  //テキストサイズと色の設定
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  
+  display.setCursor(0,0);  //1列目
+  display.println("Dir");  //現在向いてる角度
+  display.setCursor(30,0);
+  display.println(":");
+  display.setCursor(36,0);
+  display.println(int(ac.getnowdir()));    //現在向いてる角度を表示
+
+  display.setCursor(0,10);  //2列目
+  display.println("goDir");  //この中に変数名を入力
+  display.setCursor(30,10);
+  display.println(":");
+  display.setCursor(36,10);
+  display.println(goDir);    //この中に知りたい変数を入力
+
+  display.setCursor(0,20); //3列目
+  display.println("ball");  //この中に変数名を入力
+  display.setCursor(30,20);
+  display.println(":");
+  display.setCursor(36,20);
+  display.println(ball_Far);    //この中に知りたい変数を入力
+
+  display.setCursor(0,30); //4列目
+  display.println("b_Far");  //この中に変数名を入力
+  display.setCursor(30,30);
+  display.println(":");
+  display.setCursor(36,30);
+  display.println(ball.far);    //この中に知りたい変数を入力
+
+  display.setCursor(0,40); //5列目
+  display.println("x");  //この中に変数名を入力
+  display.setCursor(30,40);
+  display.println(":");
+  display.setCursor(36,40);
+  display.println();    //この中に知りたい変数を入力
+
+  display.setCursor(0,50); //6列目
+  display.println("y");  //この中に変数名を入力
+  display.setCursor(30,50);
+  display.println(":");
+  display.setCursor(36,50);
+  display.println();    //この中に知りたい変数を入力
 }

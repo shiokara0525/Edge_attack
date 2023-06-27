@@ -27,12 +27,26 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
         ang = pixy.ccc.blocks[num].m_angle;
         size = size_max;
 
-        if(30 < abs(ball_ang)){
+        if(23 < abs(ball_ang)){
+            if(B_2 != 0){
+                B_2 = 0;
+                tim_cam.reset();
+            }
             P = -dir;
         }
         else{
-            if(abs(dir) < 70){
-                P = 0.75 * (150 - x);
+            if(B_2 != 1){
+                B_2 = 1;
+                tim_cam.reset();
+            }
+            if(abs(dir) < 85){
+                if(tim_cam.read_ms() < 200){
+                    P = 1.3 * (150 - x);
+                }
+                else{
+                    P = 0.75 * (150 - x);
+                }
+                
             }
             else{
                 P = -dir * 1.3;
@@ -45,10 +59,15 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
             ac_terget = dir;
             tim_cam.reset();
         }
-        if(500 < tim_cam.read_ms()){
+        if(100 < tim_cam.read_ms()){
             ac_terget = 0;
         }
-        P = (ac_terget - dir);
+        else if(tim_cam.read_ms() < 200){
+            P = 1.3 * (ac_terget - dir);
+        }
+        else{
+            P = (ac_terget - dir);
+        }
     }
 
     if(pixy.ccc.numBlocks == 0){

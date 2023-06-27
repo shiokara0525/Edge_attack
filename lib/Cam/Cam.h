@@ -7,8 +7,9 @@ class Cam{
         Pixy2UART pixy;
         timer tim_cam;
         float p_old;
-        int B;
+        int B = 999;
         float ac_terget;
+        int B_2 = 999;
     public:
         Cam();
         float x;
