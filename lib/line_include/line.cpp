@@ -47,19 +47,19 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
     for(int i=0; i<8; i++)  //8chマルチプレクサ×3なので8回まわす、そして、24個のラインセンサを指定する
     {
       if(i==1 || i==3 || i==5 || i==7){
-        digitalWrite(Lselect[0],HIGH);
+        digitalWriteFast(Lselect[0],HIGH);
       }else{
-        digitalWrite(Lselect[0],LOW);
+        digitalWriteFast(Lselect[0],LOW);
       }
       if(i==2 || i==3 || i==6 || i==7){
-        digitalWrite(Lselect[1],HIGH);
+        digitalWriteFast(Lselect[1],HIGH);
       }else{
-        digitalWrite(Lselect[1],LOW);
+        digitalWriteFast(Lselect[1],LOW);
       }
       if(i>=4){
-        digitalWrite(Lselect[2],HIGH);
+        digitalWriteFast(Lselect[2],HIGH);
       }else{
-        digitalWrite(Lselect[2],LOW);
+        digitalWriteFast(Lselect[2],LOW);
       }
 
       for (int Lic_num=0; Lic_num<3; Lic_num++)

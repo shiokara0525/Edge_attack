@@ -6,19 +6,17 @@ class Cam{
     private:
         Pixy2UART pixy;
         timer tim_cam;
-        float p_old;
-        int B = 999;
-        float ac_terget;
-        int B_2 = 999;
-        int y_b = 2;
+        timer cam_tim;
+        int color = 2;
+        int b_1 = 999;
+        int b = 999;
     public:
         Cam();
         float x;
         float ang;
         float size;
-        int flag_1;
-        int flag_2;
         int getCamdata(float,float,int);
         void print();
         float P = 0;
+        int flag_1 = 0;
 };

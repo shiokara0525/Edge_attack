@@ -9,77 +9,76 @@ Cam::Cam(){
 
 int Cam::getCamdata(float dir,float ball_ang,int flag){
     pixy.ccc.getBlocks();
-
-    if(pixy.ccc.numBlocks && flag == 0){
-        if(B != 1){
-            B = 1;
+    int num = 999;
+    int cam_able = 1;
+    int size = 0;
+    int x = 0;
+    if(pixy.ccc.numBlocks){
+        if(b_1 != 1){
+            b_1 = 1;
         }
-        int num = 0;
-        float size_max = 0;
-
-        for (int i = 1; i < pixy.ccc.numBlocks + 1; i++){
-            if(pixy.ccc.blocks->m_signature == y_b){
-                if(size_max < pixy.ccc.blocks[i].m_width){
-                    size_max = pixy.ccc.blocks[i].m_width;
+        cam_able = 1;
+        for(int i = 0; i < pixy.ccc.numBlocks; i++){
+            if(pixy.ccc.blocks[i].m_signature == color){
+                if(size < pixy.ccc.blocks[i].m_width){
                     num = i;
+                    size = pixy.ccc.blocks[i].m_width;
+                    x = pixy.ccc.blocks[i].m_x;
                 }
             }
         }
-        x = pixy.ccc.blocks[num].m_x;
-        ang = pixy.ccc.blocks[num].m_angle;
-        size = size_max;
-        float p = 150 - x;
-
+        if(num == 999){
+            cam_able = 0;
+        }
         if(23 < abs(ball_ang)){
-            if(B_2 != 0){
-                B_2 = 0;
-                tim_cam.reset();
-            }
-            P = -dir;
+            cam_able = 0;
         }
-        else{
-            if(B_2 != 1){
-                B_2 = 1;
-                tim_cam.reset();
-            }
-            if(abs(dir) < 70){
-                if(tim_cam.read_ms() < 200){
-                    P = 1.3 * p;
-                }
-                else{
-                    P = 0.75 * p;
-                }
-                flag_2 = 1;
-            }
-            else{
-                P = -dir * 1.3;
-            }
-        }
-        if(num == 0){
-            P = 1.3 * -dir;
+        if(70 < abs(dir)){
+            cam_able = 0;
         }
     }
     else{
-        if(B != 0){
-            B = 0;
-            ac_terget = 0;
+        if(b_1 != 0){
+            b_1 = 0;
+            cam_tim.reset();
+        }
+
+        if(cam_tim.read_ms() < 100){
+            cam_able = 1;
+        }
+        else{
+            cam_able = 0;
+        }
+    }
+
+    if(cam_able == 0){
+        if(b != 0){
+            b = 0;
             tim_cam.reset();
         }
+
         if(tim_cam.read_ms() < 100){
-            P = 1.3 * (ac_terget - dir);
+            P = -dir * 1.5;
         }
         else{
-            P = (ac_terget - dir);
+            P = 1 * -dir;
         }
-    }
-
-    if(pixy.ccc.numBlocks == 0){
-        flag_1 = 0;
+        return 0;
     }
     else{
-        flag_1 = 1;
+        if(b != 1){
+            b = 1;
+            tim_cam.reset();            
+        }
+
+        if(tim_cam.read_ms() < 100){
+            P = (150 - x) * 1.8;
+        }
+        else{
+            P = (150 - x) * 0.7;
+        }
+        return 1;
     }
-    return flag_1;
 }
 
 

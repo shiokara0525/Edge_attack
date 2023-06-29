@@ -95,7 +95,6 @@ void setup(){
 
 
 void loop(){
-  Timer.reset();
   double AC_val = 100;  //姿勢制御の最終的な値を入れるグローバル変数
   angle go_ang(0,true);
   
@@ -107,12 +106,12 @@ void loop(){
   if(A == 10){  //情報入手
     ball.getBallposition();  //ボールの位置取得
     cam_flag = cam.getCamdata(ac.getnowdir(),ball.ang,flag_ac);  //姿勢制御の値入手
-    if(analogRead(ball_catch) < 800){
-      ball_catch_flag = 1;
-    }
-    else{
-      ball_catch_flag = 0;
-    }
+    // if(analogRead(ball_catch) < 800){
+    //   ball_catch_flag = 1;
+    // }
+    // else{
+    //   ball_catch_flag = 0;
+    // }
     Line_flag = line.getLINE_Vec();      //ライン踏んでるか踏んでないかを判定
     A = 20;
   }
@@ -306,7 +305,7 @@ void loop(){
 
 
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
-    //MOTER.moveMoter(go_ang,goval,cam.P,stop_flag,line);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
+    MOTER.moveMoter(go_ang,goval,cam.P,stop_flag,line);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
 
     A = 10;
   }
@@ -319,7 +318,7 @@ void loop(){
 
   goDir = go_ang.degree;
   //timer_num = Timer.read_ms();
-  OLED_moving();  //デバック用
+  //OLED_moving();  //デバック用
 }
 
 
