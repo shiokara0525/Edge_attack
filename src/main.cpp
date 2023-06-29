@@ -83,7 +83,7 @@ Cam cam;
 
 void setup(){
   Serial.begin(9600);  //シリアルプリントできるよ
-  Serial8.begin(115200);
+  Serial8.begin(57600);
   ac.setup();
   line.setup();
   OLED_setup();
@@ -288,11 +288,11 @@ void loop(){
       cam.getCamdata(ac.getnowdir(),ball.ang,0);
       ball.getBallposition();
       
-      if(Timer.read_ms() < 250){  //下がる(0.35秒)
+      if(Timer.read_ms() < 300){  //下がる(0.35秒)
         MOTER.moveMoter(go_ang,goval,cam.P,0,line);
       }
       else{  //止まるよ
-        MOTER.moter_0();
+        MOTER.moter_ac(cam.P);
         flag = 1;
       }
 
