@@ -37,6 +37,10 @@ int toogle = 0;  //トグルスイッチの値を記録（トグルを引くと�
 const int Toggle_Switch = 14;  //スイッチのピン番号
 int goDir;  //loop関数ないしか使えないangle go_ang.degressの値をぶち込んでグローバルに使うために作った税
 void OLED_moving();  //ロボットが動いてる間の画面
+void OLED_setup();
+void OLED();
+
+const int Tatch_sensor = A14;
 
 /*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
 
@@ -59,9 +63,9 @@ int edge_flag = 0; //ラインの端にいたときにゴールさせる確率�
 const int Tact_Switch = 15;  //スイッチのピン番号 
 const double pi = 3.1415926535897932384;  //円周率
 float ball_Far = 0;
-void OLED_setup();
-void OLED();
-
+const int ball_catch = A14;
+int ball_catch_flag = 0;
+int cam_flag = 0;
 int val_max = 150;
 int RA_size = 0;
 
@@ -69,7 +73,7 @@ BALL ball;  //ボールのオブジクトだよ(基本的にボールの位置�
 AC ac;      //姿勢制御のオブジェクトだよ(基本的に姿勢制御は全部ここ)
 LINE line;  //ラインのオブジェクトだよ(基本的にラインの判定は全部ここ)
 moter MOTER;
-timer Timer_edge;
+timer Timer;
 us US;
 timer timer_OLED; //タイマーの宣言(OLED用)
 Cam cam;
@@ -91,19 +95,24 @@ void setup(){
 
 
 void loop(){
+  Timer.reset();
   double AC_val = 100;  //姿勢制御の最終的な値を入れるグローバル変数
   angle go_ang(0,true);
   
   int Line_flag = 0;  //ライン踏んでるか踏んでないか
   int stop_flag = 0;  //ラインをちょっと踏んでるときにどんな動きをするかを決める変数
   int goval = val_max;  //動くスピード決定
-  int cam_flag = 0;
 
 
   if(A == 10){  //情報入手
     ball.getBallposition();  //ボールの位置取得
     cam_flag = cam.getCamdata(ac.getnowdir(),ball.ang,flag_ac);  //姿勢制御の値入手
-    
+    if(analogRead(ball_catch) < 800){
+      ball_catch_flag = 1;
+    }
+    else{
+      ball_catch_flag = 0;
+    }
     Line_flag = line.getLINE_Vec();      //ライン踏んでるか踏んでないかを判定
     A = 20;
   }
@@ -141,7 +150,9 @@ void loop(){
     else{
       go_ang = ball.ang + (RA_size / ball_far) * (90 < ball.ang ? 90 : ball.ang);
     }
-
+    // if(ball_catch_flag == 1){
+    //   go_ang = 0;
+    // }
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
     
@@ -190,7 +201,7 @@ void loop(){
       if(A_line != B_line){  //前回までライン踏んでたら
         B_line = A_line;  //今回はライン踏んでないよ
 
-        if(cam_flag == 0 && line_flag_2 == 1){  //前方向ライン踏んだ時
+        if((60 < abs(ac.dir) || cam_flag == 0) && line_flag_2 == 1){  //前方向ライン踏んだ時
           A = 36;  //後ろに下がるよ
         }
         flag_ac = 0;
@@ -295,7 +306,7 @@ void loop(){
 
 
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
-    MOTER.moveMoter(go_ang,goval,cam.P,stop_flag,line);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
+    //MOTER.moveMoter(go_ang,goval,cam.P,stop_flag,line);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
 
     A = 10;
   }
@@ -307,6 +318,7 @@ void loop(){
   }
 
   goDir = go_ang.degree;
+  //timer_num = Timer.read_ms();
   OLED_moving();  //デバック用
 }
 
@@ -1249,21 +1261,21 @@ void OLED_moving(){
   display.println(ball_Far);    //この中に知りたい変数を入力
 
   display.setCursor(0,30); //4列目
-  display.println("b_Far");  //この中に変数名を入力
+  display.println("cam");  //この中に変数名を入力
   display.setCursor(30,30);
   display.println(":");
   display.setCursor(36,30);
-  display.println(ball.far);    //この中に知りたい変数を入力
+  display.println(cam_flag);    //この中に知りたい変数を入力
 
   display.setCursor(0,40); //5列目
-  display.println("x");  //この中に変数名を入力
+  display.println("P");  //この中に変数名を入力
   display.setCursor(30,40);
   display.println(":");
   display.setCursor(36,40);
-  display.println();    //この中に知りたい変数を入力
+  display.println(cam.P);    //この中に知りたい変数を入力
 
   display.setCursor(0,50); //6列目
-  display.println("y");  //この中に変数名を入力
+  display.println("");  //この中に変数名を入力
   display.setCursor(30,50);
   display.println(":");
   display.setCursor(36,50);

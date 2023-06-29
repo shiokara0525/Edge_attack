@@ -10,12 +10,14 @@ class Cam{
         int B = 999;
         float ac_terget;
         int B_2 = 999;
+        int y_b = 2;
     public:
         Cam();
         float x;
         float ang;
         float size;
         int flag_1;
+        int flag_2;
         int getCamdata(float,float,int);
         void print();
         float P = 0;
