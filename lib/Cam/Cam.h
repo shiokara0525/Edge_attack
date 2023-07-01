@@ -7,11 +7,11 @@ class Cam{
         Pixy2UART pixy;
         timer tim_cam;
         timer cam_tim;
-        int color = 2;
         int b_1 = 999;
         int b = 999;
     public:
         Cam();
+        int color = 2;
         float x;
         float ang;
         float size;
@@ -19,4 +19,5 @@ class Cam{
         void print();
         float P = 0;
         int flag_1 = 0;
+        int test = 0;
 };

@@ -58,7 +58,6 @@ float Dir_target = 0;
 
 int line_flag = 0;    //最初にどんな風にラインの判定したか記録
 int line_flag_2 = 0;
-int edge_flag = 0; //ラインの端にいたときにゴールさせる確率を上げるための変数だよ(なんもなかったら0,右の端だったら1,左だったら2)
 
 const int Tact_Switch = 15;  //スイッチのピン番号 
 const double pi = 3.1415926535897932384;  //円周率
@@ -68,12 +67,15 @@ int ball_catch_flag = 0;
 int cam_flag = 0;
 int val_max = 150;
 int RA_size = 0;
+int timer_num = 0;
 
 BALL ball;  //ボールのオブジクトだよ(基本的にボールの位置取得は全部ここ)
 AC ac;      //姿勢制御のオブジェクトだよ(基本的に姿勢制御は全部ここ)
 LINE line;  //ラインのオブジェクトだよ(基本的にラインの判定は全部ここ)
 moter MOTER;
 timer Timer;
+timer _Timer[4];
+int __Timer[4];
 us US;
 timer timer_OLED; //タイマーの宣言(OLED用)
 Cam cam;
@@ -97,6 +99,7 @@ void setup(){
 void loop(){
   double AC_val = 100;  //姿勢制御の最終的な値を入れるグローバル変数
   angle go_ang(0,true);
+  float ra_size = RA_size;
   
   int Line_flag = 0;  //ライン踏んでるか踏んでないか
   int stop_flag = 0;  //ラインをちょっと踏んでるときにどんな動きをするかを決める変数
@@ -105,13 +108,16 @@ void loop(){
 
   if(A == 10){  //情報入手
     ball.getBallposition();  //ボールの位置取得
-    cam_flag = cam.getCamdata(ac.getnowdir(),ball.ang,flag_ac);  //姿勢制御の値入手
-    // if(analogRead(ball_catch) < 800){
-    //   ball_catch_flag = 1;
-    // }
-    // else{
-    //   ball_catch_flag = 0;
-    // }
+    ball_catch_flag = 0;
+    if(abs(ball.ang) < 20){
+      if(analogRead(ball_catch) < 800){
+        ball_catch_flag = 1;
+      }
+      else{
+        ball_catch_flag = 0;
+      }
+    }
+    cam_flag = cam.getCamdata(ac.getnowdir(),ball.ang,ball_catch_flag);  //姿勢制御の値入手
     Line_flag = line.getLINE_Vec();      //ライン踏んでるか踏んでないかを判定
     A = 20;
   }
@@ -127,27 +133,34 @@ void loop(){
 
 
   if(A == 20){  //進む角度決めるとこ
+    if(cam.flag_1 == 1 && (10 < abs(ball.ang) || ball_catch_flag == 0)){
+      goval -= 80;
+      ra_size += 10;
+    }
+    else if(cam.flag_1 == 2){
+      ra_size += 10;
+    }
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
     float ball_far = ball.far;
     if(ball_far < 40){
       ball_far = 40;
     }
     else if(ball_far < 65){
-      ball_far = 60;
+      ball_far = 55;
     }
     else if(ball_far < 80){
       ball_far = 80;
     }
     else{
-      ball_far = 80;
+      ball_far = 100;
     }
 
     ball_Far = ball_far;
     if(ball.ang < 0){
-      go_ang = ball.ang + (RA_size / ball_far) * (90 < abs(ball.ang) ? -90 : ball.ang);
+      go_ang = ball.ang + (ra_size / ball_far) * (90 < abs(ball.ang) ? -90 : ball.ang);
     }
     else{
-      go_ang = ball.ang + (RA_size / ball_far) * (90 < ball.ang ? 90 : ball.ang);
+      go_ang = ball.ang + (ra_size / ball_far) * (90 < ball.ang ? 90 : ball.ang);
     }
     // if(ball_catch_flag == 1){
     //   go_ang = 0;
@@ -160,6 +173,9 @@ void loop(){
     }
 
     go_ang.to_range(180,true);
+    if(ball_catch_flag == 1){
+      go_ang = 0;
+    }
 
     A = 30;  //次はライン読むよ!!
   }
@@ -200,7 +216,7 @@ void loop(){
       if(A_line != B_line){  //前回までライン踏んでたら
         B_line = A_line;  //今回はライン踏んでないよ
 
-        if((60 < abs(ac.dir) || cam_flag == 0) && line_flag_2 == 1){  //前方向ライン踏んだ時
+        if((45 < abs(ac.dir) || cam_flag == 0) && line_flag_2 == 1){  //前方向ライン踏んだ時
           A = 36;  //後ろに下がるよ
         }
         flag_ac = 0;
@@ -274,18 +290,16 @@ void loop(){
   if(A == 36){  //前にボールがあるとき下がるやつだよ
     timer Timer;
     Timer.reset();
-    if(edge_flag == 1){
-      go_ang = 175.0;
-    }
-    else if(edge_flag == 2){
-      go_ang = -175.0;
-    }
-    else{
-      go_ang = 180.0;
-    }
+    go_ang = 179.9;
 
     while(abs(ball.ang) < 60){  //前方向にボールがあるとき
-      cam.getCamdata(ac.getnowdir(),ball.ang,0);
+      if(analogRead(ball_catch) < 800){
+        ball_catch_flag = 1;
+      }
+      else{
+        ball_catch_flag = 0;
+      }
+      cam.getCamdata(ac.getnowdir(),ball.ang,ball_catch_flag);
       ball.getBallposition();
       
       if(Timer.read_ms() < 300){  //下がる(0.35秒)
@@ -317,8 +331,7 @@ void loop(){
   }
 
   goDir = go_ang.degree;
-  //timer_num = Timer.read_ms();
-  //OLED_moving();  //デバック用
+  OLED_moving();  //デバック用
 }
 
 
@@ -1239,39 +1252,39 @@ void OLED_moving(){
   display.setTextColor(WHITE);
   
   display.setCursor(0,0);  //1列目
-  display.println("Dir");  //現在向いてる角度
+  display.println("ball");  //現在向いてる角度
   display.setCursor(30,0);
   display.println(":");
   display.setCursor(36,0);
-  display.println(int(ac.getnowdir()));    //現在向いてる角度を表示
+  display.println(ball_catch_flag);    //現在向いてる角度を表示
 
   display.setCursor(0,10);  //2列目
-  display.println("goDir");  //この中に変数名を入力
+  display.println("2");  //この中に変数名を入力
   display.setCursor(30,10);
   display.println(":");
   display.setCursor(36,10);
-  display.println(goDir);    //この中に知りたい変数を入力
+  display.println();    //この中に知りたい変数を入力
 
   display.setCursor(0,20); //3列目
-  display.println("ball");  //この中に変数名を入力
+  display.println("3");  //この中に変数名を入力
   display.setCursor(30,20);
   display.println(":");
   display.setCursor(36,20);
-  display.println(ball_Far);    //この中に知りたい変数を入力
+  display.println();    //この中に知りたい変数を入力
 
   display.setCursor(0,30); //4列目
-  display.println("cam");  //この中に変数名を入力
+  display.println("4");  //この中に変数名を入力
   display.setCursor(30,30);
   display.println(":");
   display.setCursor(36,30);
-  display.println(cam_flag);    //この中に知りたい変数を入力
+  display.println();    //この中に知りたい変数を入力
 
   display.setCursor(0,40); //5列目
-  display.println("P");  //この中に変数名を入力
+  display.println("");  //この中に変数名を入力
   display.setCursor(30,40);
   display.println(":");
   display.setCursor(36,40);
-  display.println(cam.P);    //この中に知りたい変数を入力
+  display.println();    //この中に知りたい変数を入力
 
   display.setCursor(0,50); //6列目
   display.println("");  //この中に変数名を入力
