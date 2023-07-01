@@ -46,6 +46,7 @@ long old_encVal = 0;  //エンコーダーの過去値を示す変数
 int line_flag = 0;    //最初にどんな風にラインの判定したか記録
 int edge_flag = 0; //ラインの端にいたときにゴールさせる確率を上げるための変数だよ(なんもなかったら0,右の端だったら1,左だったら2)
 int side_flag = 0;
+int court_flag = 0;  //攻めるコートを決めるための変数(0ならYellow,1ならBlue)
 int NoneM_flag = 0;  //モーターを動かさずにプログラムを進行させるためのフラグ(モーターを動かすときは0,動かさないときは1にする)
 
 const int Tact_Switch = 15;  //スイッチのピン番号 
@@ -673,13 +674,89 @@ void OLED_set() {
           if(Button_select == 0)  //nextが選択されていたら
           {
             ac.setup_2();  //姿勢制御の値リセットするぜい
-            A_OLED = 15;  //スタート画面に行く
+            A_OLED = 12;  //コート方向判定
           }
           else if(Button_select == 1)  //exitが選択されていたら
           {
             A_OLED = 0;  //メニュー画面に戻る
           }
           aa = 0;
+        }
+      }
+    }
+    else if(A_OLED == 12)
+    {
+      if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
+        Button_select = 0;  //ボタンの選択(setDir)をデフォルトにする
+        B_OLED = A_OLED;
+      };
+
+      display.display();
+      display.clearDisplay();
+
+      display.setTextSize(1);
+
+      display.setTextColor(WHITE);
+      if(Button_select == 0)  //exitが選択されていたら
+      {
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+      }
+      display.setCursor(0,30);
+      display.println("Yellow");
+
+      display.setTextColor(WHITE);
+      if(Button_select == 1)  //exitが選択されていたら
+      {
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+      }
+      display.setCursor(90,30);
+      display.println("Blue");
+
+      display.setTextColor(WHITE);
+      if(Button_select == 2)  //exitが選択されていたら
+      {
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+      }
+      display.setCursor(50,55);
+      display.println("Exit");
+
+      //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+      if(aa == 0){
+        if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
+          aa = 1;
+        }
+      }else{
+        if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
+          
+          if(Button_select == 0)  //yellowが選択されていたら
+          {
+            court_flag = 0;
+             A_OLED = 15;  //スタート画面に行く
+          }
+          else if(Button_select == 1)  //blueが選択されていたら
+          {
+            court_flag = 1;
+            A_OLED = 15;  //スタート画面に行く
+          }
+          else if(Button_select == 2)  //exitが選択されていたら
+          {
+            A_OLED = 0;  //メニュー画面に戻る
+          }
         }
       }
     }
@@ -1223,7 +1300,30 @@ void OLED_set() {
             Button_select = 1;  //exit
           }
         }
-        else if(A_OLED == 15)
+        else if(A_OLED == 12)
+        {
+          if(new_encVal > old_encVal)  //回転方向を判定
+          {
+            if(Button_select < 2){
+              Button_select++;  //next
+            }
+            else
+            {
+              Button_select = 0;
+            }
+          }
+          else if(new_encVal < old_encVal)
+          {
+            if(Button_select  > 0){
+              Button_select--;  //next
+            }
+            else
+            {
+              Button_select = 2;
+            }
+          }
+        }
+        else if(A_OLED == 12 || A_OLED == 15)
         {
           if(new_encVal > old_encVal)  //回転方向を判定
           {
