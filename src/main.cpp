@@ -772,6 +772,11 @@ void OLED_set() {
         B_OLED = A_OLED;
       };
       
+      //カメラとうまく通信できなかったら
+      if(ab == 0){  //ここにカメラが動作していなかった時の条件を書く！！！！！！！！！！！！！！！！！！
+        display.fillRect(0, 0, 124, 53, WHITE);
+      }
+
       //OLEDの初期化
       display.display();
       display.clearDisplay();
@@ -1333,6 +1338,10 @@ void OLED_set() {
             if(Button_select  > 0){
               Button_select--;  //next
             }
+          }
+          //カメラとうまく通信できなかったら
+          if(ab == 0){  //ここにカメラが動作していなかった時の条件を書く！！！！！！！！！！！！！！！！！！
+            Button_select = 0;  //デフォルトボタンから、editボタンに変更
           }
         }
         else if(A_OLED == 20)  //ラインの閾値を変更する
