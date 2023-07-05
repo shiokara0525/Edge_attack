@@ -99,12 +99,13 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
     data_sum[i] = 0; //合計値をリセット
     Lnone = 0; //ラインセンサの上にラインがあるということを数えるをリセット(一つのセンサごとに)
 
-    // Serial.print(data_ave[i]); //ラインセンサの値をシリアルモニタに表示
-    // Serial.print(" ");
+    Serial.print(data_ave[i]); //ラインセンサの値をシリアルモニタに表示
+    Serial.print(" ");
   }
-  data_ave[4] = 0;
-  data_ave[8] = 0;
-  data_ave[20] = 0;
+  Serial.println();
+  // data_ave[4] = 0;
+  // data_ave[8] = 0;
+  // data_ave[20] = 0;
 
   for(int i=0; i<24; i++) //24個のラインセンサを指定する
   {
@@ -275,8 +276,6 @@ double line_switch(int i,double ang,int line_flag){  //ラインを踏みこし�
 
   double goang = (i * 30.0)- 180.0;
 
-  Serial.print(" 踏んだ角度 : ");
-  Serial.print(goang);
 
   return goang;
 }

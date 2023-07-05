@@ -13,39 +13,36 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
     int cam_able = 1;
     int size = 0;
     int x = 0;
-    int y = 0;
     flag_1 = 0;
     if(pixy.ccc.numBlocks){
+        flag_2 = 1;
         if(b_1 != 1){
             b_1 = 1;
         }
         cam_able = 1;
         for(int i = 0; i < pixy.ccc.numBlocks; i++){
             if(pixy.ccc.blocks[i].m_signature == color){
-                if(size < pixy.ccc.blocks[i].m_width){
+                if(size < pixy.ccc.blocks[i].m_height){
                     num = i;
                     size = pixy.ccc.blocks[i].m_height;
                     x = pixy.ccc.blocks[i].m_x;
-                    y = pixy.ccc.blocks[i].m_y;
                 }
             }
         }
         X = x;
         Size = size;
-        if(num == 999){
-            cam_able = 0;
-        }
-        if(45 < abs(ball_ang)){
-            cam_able = 0;
-        }
-        if(50 < abs(dir)){
+        if(num == 999 || 23 < abs(ball_ang) || 45 < abs(dir)){
             cam_able = 0;
         }
         if(flag == 1){
             cam_able = 1;
         }
+        else if(flag == 2){
+            cam_able = 2;
+        }
     }
-    else{
+    else{  //カメラ見てないとき
+        flag_2 = 0;
         if(b_1 != 0){
             b_1 = 0;
             cam_tim.reset();
@@ -65,7 +62,7 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
             tim_cam.reset();
         }
 
-        if(tim_cam.read_ms() < 100){
+        if(tim_cam.read_ms() < 100 && flag != 2){
             test = 1;
             P = -dir * 2;
         }
@@ -75,6 +72,15 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
         }
         return 0;
     }
+    else if(cam_able == 2){
+        if(b != 2){
+            b = 2;
+            ac_target = dir;
+        }
+
+        P = (ac_target - dir);
+        return 0;
+    }
     else{
         if(b != 1){
             b = 1;
@@ -82,7 +88,7 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
         }
 
         if(tim_cam.read_ms() < 180){
-            P = (150 - x) * 1.5;
+            P = (150 - x) * 1.35;
             flag_1 = 1;
             test = 3;
         }
