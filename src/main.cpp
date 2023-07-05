@@ -771,7 +771,7 @@ void OLED_set() {
         Button_select = 1;  //ボタンの選択(setDir)をデフォルトにする
         B_OLED = A_OLED;
       };
-
+      
       //OLEDの初期化
       display.display();
       display.clearDisplay();
