@@ -407,7 +407,7 @@ void loop(){
 
     A = 10;
   }
-  //OLED_moving();  //デバック用
+  OLED_moving();  //デバック用
 
   if(digitalRead(Tact_Switch) == LOW){
     MOTER.moter_0();
@@ -1507,32 +1507,32 @@ void OLED_moving(){
   display.println(ball.ang);    //現在向いてる角度を表示
 
   display.setCursor(0,10);  //2列目
-  display.println("ball");  //この中に変数名を入力
+  display.println("goang");  //この中に変数名を入力
   display.setCursor(30,10);
   display.println(":");
   display.setCursor(36,10);
-  display.println(ball_Far);    //この中に知りたい変数を入力
+  display.println(goDir);    //この中に知りたい変数を入力
 
   display.setCursor(0,20); //3列目
-  display.println("goang");  //この中に変数名を入力
+  display.println("ac");  //この中に変数名を入力
   display.setCursor(30,20);
   display.println(":");
   display.setCursor(36,20);
-  display.println(goDir);    //この中に知りたい変数を入力
+  display.println(cam.P);    //この中に知りたい変数を入力
 
   display.setCursor(0,30); //4列目
-  display.println("Bx");  //この中に変数名を入力
+  display.println("flagC");  //この中に変数名を入力
   display.setCursor(30,30);
   display.println(":");
   display.setCursor(36,30);
-  display.println(ball.ball_x.returnAve());    //この中に知りたい変数を入力
+  display.println(cam.test);    //この中に知りたい変数を入力
 
   display.setCursor(0,40); //5列目
-  display.println("By");  //この中に変数名を入力
+  display.println("dir");  //この中に変数名を入力
   display.setCursor(30,40);
   display.println(":");
   display.setCursor(36,40);
-  display.println(ball.ball_y.returnAve());    //この中に知りたい変数を入力
+  display.println(ac.dir);    //この中に知りたい変数を入力
 
   display.setCursor(0,50); //6列目
   display.println("");  //この中に変数名を入力

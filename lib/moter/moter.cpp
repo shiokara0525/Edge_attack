@@ -128,9 +128,14 @@ void moter::moveMoter_0(angle ang,int val,double ac_val){
 
   for(int i = 0; i < 4; i++){  //モーターの値を計算するところだよ
     
-    Mval[i] = Mval[i] / h * max_val + ac_val;  //モーターの値を計算(進みたいベクトルの値と姿勢制御の値を合わせる)
+    if(i == 0 || i == 3){
+      Mval[i] = Mval[i] / h * max_val;  //モーターの値を計算(進みたいベクトルの値と姿勢制御の値を合わせる)
+    }
+    else{
+      Mval[i] = Mval[i] / h * max_val + ac_val * 1.3;  //モーターの値を計算(進みたいベクトルの値と姿勢制御の値を合わせる)
+    }
 
-    if(i == 2){
+    if(i == 3){
       if(0 < Mval[i]){            //モーターの回転方向が正の時
         digitalWrite(pah[i] , LOW);    //モーターの回転方向を正にする
         analogWrite(ena[i] , Mval[i]); //モーターの回転速度を設定
@@ -150,6 +155,7 @@ void moter::moveMoter_0(angle ang,int val,double ac_val){
         analogWrite(ena[i] , -Mval[i]);  //モーターの回転速度を設定
       }
     }
+
   }
 }
 
