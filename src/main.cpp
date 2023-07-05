@@ -46,7 +46,7 @@ const int Tatch_sensor = A14;
 
 int flag = 0;
 int flag_ac = 0;
-timer ac_timer;
+timer line_timer;
 int A = 0;  //どのチャプターに移動するかを決める変数
 
 int A_line = 0;  //ライン踏んでるか踏んでないか
@@ -68,7 +68,9 @@ int cam_flag = 0;
 int val_max = 150;
 int RA_size = 0;
 int timer_num = 0;
-
+int BF_flag = 0;
+int NoneM_flag = 0;  //モーターを動かさずにプログラムを進行させるためのフラグ(モーターを動かすときは0,動かさないときは1にする)
+int Bflag = 0;
 BALL ball;  //ボールのオブジクトだよ(基本的にボールの位置取得は全部ここ)
 AC ac;      //姿勢制御のオブジェクトだよ(基本的に姿勢制御は全部ここ)
 LINE line;  //ラインのオブジェクトだよ(基本的にラインの判定は全部ここ)
@@ -79,6 +81,7 @@ int __Timer[4];
 us US;
 timer timer_OLED; //タイマーの宣言(OLED用)
 Cam cam;
+timer B_timer;
 
 /*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
 
@@ -102,7 +105,6 @@ void loop(){
   float ra_size = RA_size;
   
   int Line_flag = 0;  //ライン踏んでるか踏んでないか
-  int stop_flag = 0;  //ラインをちょっと踏んでるときにどんな動きをするかを決める変数
   int goval = val_max;  //動くスピード決定
 
 
@@ -133,13 +135,6 @@ void loop(){
 
 
   if(A == 20){  //進む角度決めるとこ
-    if(cam.flag_1 == 1 && (10 < abs(ball.ang) || ball_catch_flag == 0)){
-      goval -= 80;
-      ra_size += 10;
-    }
-    else if(cam.flag_1 == 2){
-      ra_size += 10;
-    }
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
     float ball_far = ball.far;
     if(ball_far < 40){
@@ -153,6 +148,17 @@ void loop(){
     }
     else{
       ball_far = 100;
+    }
+
+    if(cam.flag_1 == 1){
+      goval = 100;
+      ball_far = 40;
+      ra_size += 15;
+    }
+    else if(cam.flag_1 == 2 && 30 < abs(ball.ang)){
+      goval = 140;
+      ra_size += 5;
+      ball_far = 80;
     }
 
     ball_Far = ball_far;
@@ -197,14 +203,38 @@ void loop(){
         line_flag_2 = line.switchLineflag(linedir_2);
 
         go_ang = line.decideGoang(linedir,line_flag);
-
+        if(3 <= line.Lrange_num){
+          if(abs(ball.ang) < 90){
+            go_ang = 179.9;
+          }
+          else{
+            go_ang = 0;
+          }
+        }
         MOTER.moter_0();
         delay(75);
       }
       else{  //連続でライン踏んでるとき
         go_ang = line.decideGoang(linedir,line_flag);
-        stop_flag = 0;
       }
+
+      // if(cam.Size < 12 && abs(ac.dir) < 10){
+      //   if(line_flag == 2){
+      //     if((90 < cam.X && cam.X < 110) || (60 < ball.ang && ball.ang < 90)){
+      //       A = 35;
+      //     }
+      //   }
+      //   else if(line_flag == 4){
+      //     if((190 < cam.X && cam.X < 205) || (-90 < ball.ang && ball.ang < -60)){
+      //       A = 35;
+      //     }
+      //   }
+      //   else if(line_flag == 3){
+      //     if((100 < cam.X && cam.X < 200) && (60 < abs(ball.ang) && abs(ball.ang) < 100)){
+      //       A = 35;
+      //     }
+      //   }
+      // }
 
 
       if(line_flag == 0){  //ライン踏んでるけど別に進んでいいよ～って時
@@ -216,12 +246,15 @@ void loop(){
       if(A_line != B_line){  //前回までライン踏んでたら
         B_line = A_line;  //今回はライン踏んでないよ
 
-        if((45 < abs(ac.dir) || cam_flag == 0) && line_flag_2 == 1){  //前方向ライン踏んだ時
+        if(((30 < abs(ac.dir) || cam_flag == 0 || ball_catch_flag == 1) && line_flag_2 == 1) || 3 <= line.Lrange_num){  //前方向ライン踏んだ時
           A = 36;  //後ろに下がるよ
+          BF_flag = 0;
         }
         flag_ac = 0;
       }
-      line_flag = 0;
+      if(A != 36){
+        line_flag = 0;
+      }
     }
   }
 
@@ -259,7 +292,7 @@ void loop(){
 
 
       if(100 < abs(go_ang.degree)){
-        goval = 70;
+        goval = 90;
         MOTER.line_val = 2;
       }
       else if(abs(go_ang.degree) < 60){
@@ -272,27 +305,37 @@ void loop(){
       }
 
 
-      if((130 < abs(go_ang.degree) || Line_flag == 0) && (150 < abs(ball.ang))){
+      if(130 < abs(go_ang.degree) || Line_flag == 0 || 100 < abs(ball.ang)){
+        line_timer.reset();
+        A = 37;
         break;
       }
-      // else if(go_border[go_flag] - 5 < ball.ang || ball.ang < go_border[go_flag] + 5){
-      //   break;
-      // }
       else{
-        MOTER.moveMoter(go_ang,goval,AC_val,5,line);
+        if(NoneM_flag == 1){
+          OLED_moving();
+        }
+        else{
+          MOTER.moveMoter(go_ang,goval,AC_val,5,line);
+          OLED_moving();
+        }
       }
     }
 
-    A = 10;
+    line_flag = 0;
   }
 
 
   if(A == 36){  //前にボールがあるとき下がるやつだよ
     timer Timer;
     Timer.reset();
-    go_ang = 179.9;
+    if(BF_flag == 0){
+      go_ang = 179.9;
+    }
+    else{
+      go_ang = 0;
+    }
 
-    while(abs(ball.ang) < 60){  //前方向にボールがあるとき
+    while(1){  //前方向にボールがあるとき
       if(analogRead(ball_catch) < 800){
         ball_catch_flag = 1;
       }
@@ -301,17 +344,53 @@ void loop(){
       }
       cam.getCamdata(ac.getnowdir(),ball.ang,ball_catch_flag);
       ball.getBallposition();
-      
-      if(Timer.read_ms() < 300){  //下がる(0.35秒)
-        MOTER.moveMoter(go_ang,goval,cam.P,0,line);
+      if(NoneM_flag == 0){
+        if(Timer.read_ms() < 300){  //下がる(0.35秒)
+          MOTER.moveMoter(go_ang,goval,cam.P,0,line);
+        }
+        else{  //止まるよ
+          MOTER.moter_ac(cam.P);
+          flag = 1;
+          if(BF_flag == 1){
+            break;
+          }
+        }
       }
-      else{  //止まるよ
-        MOTER.moter_ac(cam.P);
-        flag = 1;
+      else{
+        OLED_moving();  //デバック用
       }
 
-      if(1100 < Timer.read_ms() || line.getLINE_Vec() == 1){
-        break;  //1.1秒経つorライン踏んだら抜けるよ
+      if(BF_flag == 0){
+        if(700 < Timer.read_ms() || line.getLINE_Vec() == 1){
+          break;  //1.1秒経つorライン踏んだら抜けるよ
+        }
+      }
+
+    }
+    A = 10;
+  }
+
+
+  if(A == 37){
+    if(160 < abs(line.Lvec_Dir)){
+      Line_flag = 2;
+    }
+    else if(cam.X < 150){
+      Line_flag = 1;
+    }
+    else{
+      Line_flag = 3;
+    }
+
+    while(1){
+      int Line_flag = line.getLINE_Vec();
+      angle line_dir(line.Lvec_Dir,true);
+      float AC_val = ac.getAC_val();
+      go_ang = line.decideGoang(line_dir,Line_flag);
+      MOTER.moveMoter_0(go_ang,goval,AC_val);
+      OLED_moving();
+      if(Line_flag == 0){
+        break;
       }
     }
     A = 10;
@@ -319,10 +398,16 @@ void loop(){
 
 
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
-    MOTER.moveMoter(go_ang,goval,cam.P,stop_flag,line);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
+    if(NoneM_flag == 1){
+      OLED_moving();  //デバック用
+    }
+    else{
+      MOTER.moveMoter_0(go_ang,goval,cam.P);  //モーターの処理(ここで渡してるのは進みたい角度,姿勢制御の値,ライン踏んでその時どうするか~ってやつだよ!)
+    }
 
     A = 10;
   }
+  //OLED_moving();  //デバック用
 
   if(digitalRead(Tact_Switch) == LOW){
     MOTER.moter_0();
@@ -331,26 +416,56 @@ void loop(){
   }
 
   goDir = go_ang.degree;
-  OLED_moving();  //デバック用
 }
 
 
 /*----------------------------------------------------------------いろいろ関数-----------------------------------------------------------*/
 void serialEvent8(){
-  int x = 0;
-  int y = 0;
-  int sawa = Serial8.read();
-  if(sawa == 255){
-    while(!Serial8.available());
-    x = Serial8.read() - 127;
-    while(!Serial8.available());
-    y = Serial8.read() - 127;
+  int n;
+  int x,y;
+  word revBuf_word[6];
+  byte revBuf_byte[6];
+  //受信データ数が、一定時間同じであれば、受信完了としてデータ読み出しを開始処理を開始する。
+  //受信データあり ※6バイト以上になるまでまつ
+  if(Serial8.available()>= 6){
+    //---------------------------
+    //受信データをバッファに格納
+    //---------------------------
+    n = 0;
+    while(Serial8.available()>0 ){ //受信データがなくなるまで読み続ける
+      //6バイト目まではデータを格納、それ以上は不要なデータであるため捨てる。
+      if(n < 6){
+        revBuf_byte[n] = Serial8.read();   //revBuf_byte[n] = Serial2.read();
+      }
+      else{
+        Serial8.read(); //Serial2.read();  //読みだすのみで格納しない。
+      }
+      n++;
+    }
+    //---------------------------
+    //データの中身を確認
+    //---------------------------
+    //データの先頭、終了コードあることを確認
+    if((revBuf_byte[0] == 0xFF ) && ( revBuf_byte[5] == 0xAA )){
+    //いったんWORD型（16bitデータ）としてから、int16_tとする。
+      revBuf_word[0] = (uint16_t(revBuf_byte[1])<< 8);//上位8ビットをbyteから、Wordに型変換して格納　上位桁にするため8ビットシフト
+      revBuf_word[1] = uint16_t(revBuf_byte[2]);//下位8ビットをbyteから、Wordに型変換して格納      
+      x = int16_t(revBuf_word[0]|revBuf_word[1]);//上位8ビット、下位ビットを合成（ビットのORを取ることで格納する。）
+      // ※int ではなく　int16_t　にすることが必要。intだけだと、32ビットのintと解釈されマイナス値がマイナスとみなされなくなる、int16_tは、16ビット指定の整数型変換
+      revBuf_word[2] = (uint16_t(revBuf_byte[3])<< 8);//上位8ビットをbyteから、Wordに型変換して格納　上位桁にするため8ビットシフト
+      revBuf_word[3] = uint16_t(revBuf_byte[4]);//下位8ビットをbyteから、Wordに型変換して格納      
+      y = int16_t(revBuf_word[2]|revBuf_word[3]);//上位8ビット、下位ビットを合成（ビットのORを取ることで格納する。）
+      // ※int ではなく　int16_t　にすることが必要。intだけだと、32ビットのintと解釈されマイナス値がマイナスとみなされなくなる、int16_tは、16ビット指定の整数型変換
+      
+      x = ball.ball_x.demandAve(x);
+      y = ball.ball_y.demandAve(y);
+    }
+    else{
+      // printf("ERR_REV");
+    }
   }
 
-  x = ball.ball_x.demandAve(x);
-  y = ball.ball_y.demandAve(y);
 }
-
 
 
 void OLED_setup(){
@@ -407,6 +522,7 @@ void OLED() {
   float La = 0;
   float Lb = 0;
   float Lc = 0;
+  NoneM_flag = 0;  //モーター動作ありのフラグ
   
   while(1){
     if(timer_OLED.read_ms() > 500) //0.5秒ごとに実行(OLEDにかかれてある文字を点滅させるときにこの周期で点滅させる)
@@ -726,7 +842,7 @@ void OLED() {
           if(Button_select == 0)  //nextが選択されていたら
           {
             ac.setup_2();  //姿勢制御の値リセットするぜい
-            A_OLED = 15;  //スタート画面に行く
+            A_OLED = 12;  //スタート画面に行く
           }
           else if(Button_select == 1)  //exitが選択されていたら
           {
@@ -736,10 +852,86 @@ void OLED() {
         }
       }
     }
-    else if(A_OLED == 15)  //ボタン押したらロボット動作開始
+    else if(A_OLED == 12)
     {
       if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
-        Button_select = 0;  //ボタンの選択(next)をデフォルトにする
+        Button_select = 0;  //ボタンの選択(setDir)をデフォルトにする
+        B_OLED = A_OLED;
+      };
+
+      display.display();
+      display.clearDisplay();
+
+      display.setTextSize(1);
+
+      display.setTextColor(WHITE);
+      if(Button_select == 0)  //exitが選択されていたら
+      {
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+      }
+      display.setCursor(0,30);
+      display.println("Yellow");
+
+      display.setTextColor(WHITE);
+      if(Button_select == 1)  //exitが選択されていたら
+      {
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+      }
+      display.setCursor(90,30);
+      display.println("Blue");
+
+      display.setTextColor(WHITE);
+      if(Button_select == 2)  //exitが選択されていたら
+      {
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+      }
+      display.setCursor(50,55);
+      display.println("Exit");
+
+      //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
+      if(aa == 0){
+        if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
+          aa = 1;
+        }
+      }else{
+        if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
+          
+          if(Button_select == 0)  //yellowが選択されていたら
+          {
+            cam.color = 1;
+            A_OLED = 15;  //スタート画面に行く
+          }
+          else if(Button_select == 1)  //blueが選択されていたら
+          {
+            cam.color = 2;
+            A_OLED = 15;  //スタート画面に行く
+          }
+          else if(Button_select == 2)  //exitが選択されていたら
+          {
+            A_OLED = 0;  //メニュー画面に戻る
+          }
+        }
+      }
+    }
+    else if(A_OLED == 15)  //トグルを傾けたらロボット動作開始
+    {
+      if(A_OLED != B_OLED){  //ステートが変わったときのみ実行(初期化)
+        Button_select = 1;  //ボタンの選択(setDir)をデフォルトにする
         B_OLED = A_OLED;
       };
 
@@ -762,7 +954,7 @@ void OLED() {
       //角度を再設定させるか、もとの選択画面に戻るかを決めるスイッチについての設定
       display.setTextSize(1);
       display.setTextColor(WHITE);
-      if(Button_select == 1)  //exitが選択されていたら
+      if(Button_select == 0)  //exitが選択されていたら
       {
         if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
           display.setTextColor(BLACK, WHITE);
@@ -771,11 +963,11 @@ void OLED() {
           display.setTextColor(WHITE);
         }
       }
-      display.setCursor(0,56);
+      display.setCursor(0,55);
       display.println("Exit");
 
       display.setTextColor(WHITE);
-      if(Button_select == 0)  //nextが選択されていたら（デフォルトはこれ）
+      if(Button_select == 1)  //setDirが選択されていたら（デフォルトはこれ）
       {
         if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
           display.setTextColor(BLACK, WHITE);
@@ -784,8 +976,21 @@ void OLED() {
           display.setTextColor(WHITE);
         }
       }
-      display.setCursor(56,55);
-      display.println("SetDir Again");
+      display.setCursor(50,55);
+      display.println("SetDir");
+
+      display.setTextColor(WHITE);
+      if(Button_select == 2)  //noneMが選択されていたら（デフォルトはこれ）
+      {
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+      }
+      display.setCursor(92,55);
+      display.println("NoneM");
 
       //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
       if(aa == 0){
@@ -794,13 +999,18 @@ void OLED() {
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          if(Button_select == 0)  //SetDir Againが選択されていたら
+          
+          if(Button_select == 0)  //exitが選択されていたら
+          {
+            A_OLED = 0;  //メニュー画面に戻る
+          }
+          else if(Button_select == 1)  //SetDir Againが選択されていたら
           {
             ac.setup_2();  //姿勢制御の値リセットするぜい
           }
-          else if(Button_select == 1)  //exitが選択されていたら
+          else if(Button_select == 2)  //NoneMが選択されていたら
           {
-            A_OLED = 0;  //メニュー画面に戻る
+            NoneM_flag = 1;  //モーター動作なしバージョンのフラグを立てる
           }
           aa = 0;
         }
@@ -1174,7 +1384,30 @@ void OLED() {
             }
           }
         }
-        else if(A_OLED == 10 || A_OLED == 15)  //スタート画面にいるときはButton_selectを変更する
+        else if(A_OLED == 12)
+        {
+          if(new_encVal > old_encVal)  //回転方向を判定
+          {
+            if(Button_select < 2){
+              Button_select++;  //next
+            }
+            else
+            {
+              Button_select = 0;
+            }
+          }
+          else if(new_encVal < old_encVal)
+          {
+            if(Button_select  > 0){
+              Button_select--;  //next
+            }
+            else
+            {
+              Button_select = 2;
+            }
+          }
+        }
+        else if(A_OLED == 10)  //スタート画面にいるときはButton_selectを変更する
         {
           if(new_encVal > old_encVal)  //回転方向を判定
           {
@@ -1183,6 +1416,21 @@ void OLED() {
           else if(new_encVal < old_encVal)
           {
             Button_select = 1;  //exit
+          }
+        }
+        else if(A_OLED == 15)
+        {
+          if(new_encVal > old_encVal)  //回転方向を判定
+          {
+            if(Button_select < 2){
+              Button_select++;  //next
+            }
+          }
+          else if(new_encVal < old_encVal)
+          {
+            if(Button_select  > 0){
+              Button_select--;  //next
+            }
           }
         }
         else if(A_OLED == 20)  //ラインの閾値を変更する
@@ -1252,39 +1500,39 @@ void OLED_moving(){
   display.setTextColor(WHITE);
   
   display.setCursor(0,0);  //1列目
-  display.println("ball");  //現在向いてる角度
+  display.println("Bang");  //現在向いてる角度
   display.setCursor(30,0);
   display.println(":");
   display.setCursor(36,0);
-  display.println(ball_catch_flag);    //現在向いてる角度を表示
+  display.println(ball.ang);    //現在向いてる角度を表示
 
   display.setCursor(0,10);  //2列目
-  display.println("2");  //この中に変数名を入力
+  display.println("ball");  //この中に変数名を入力
   display.setCursor(30,10);
   display.println(":");
   display.setCursor(36,10);
-  display.println();    //この中に知りたい変数を入力
+  display.println(ball_Far);    //この中に知りたい変数を入力
 
   display.setCursor(0,20); //3列目
-  display.println("3");  //この中に変数名を入力
+  display.println("goang");  //この中に変数名を入力
   display.setCursor(30,20);
   display.println(":");
   display.setCursor(36,20);
-  display.println();    //この中に知りたい変数を入力
+  display.println(goDir);    //この中に知りたい変数を入力
 
   display.setCursor(0,30); //4列目
-  display.println("4");  //この中に変数名を入力
+  display.println("Bx");  //この中に変数名を入力
   display.setCursor(30,30);
   display.println(":");
   display.setCursor(36,30);
-  display.println();    //この中に知りたい変数を入力
+  display.println(ball.ball_x.returnAve());    //この中に知りたい変数を入力
 
   display.setCursor(0,40); //5列目
-  display.println("");  //この中に変数名を入力
+  display.println("By");  //この中に変数名を入力
   display.setCursor(30,40);
   display.println(":");
   display.setCursor(36,40);
-  display.println();    //この中に知りたい変数を入力
+  display.println(ball.ball_y.returnAve());    //この中に知りたい変数を入力
 
   display.setCursor(0,50); //6列目
   display.println("");  //この中に変数名を入力

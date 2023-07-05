@@ -12,9 +12,9 @@ class Cam{
     public:
         Cam();
         int color = 2;
-        float x;
+        float X;
         float ang;
-        float size;
+        float Size;
         int getCamdata(float,float,int);
         void print();
         float P = 0;

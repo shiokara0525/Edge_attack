@@ -24,6 +24,7 @@ public:
     double Lrad; //ラインの角度のラジアン
     double Lvec_X = 0; //ラインセンサのX座標の和のベクトル
     double Lvec_Y = 0; //ラインセンサのY座標の和のベクトル
+    int line_flag = 0;
 
 private:
     const int LINE_1 = 23; //ラインセンサIC1の出力を読み取るためのピン

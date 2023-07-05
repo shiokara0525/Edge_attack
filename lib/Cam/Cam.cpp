@@ -13,6 +13,7 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
     int cam_able = 1;
     int size = 0;
     int x = 0;
+    int y = 0;
     flag_1 = 0;
     if(pixy.ccc.numBlocks){
         if(b_1 != 1){
@@ -23,11 +24,14 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
             if(pixy.ccc.blocks[i].m_signature == color){
                 if(size < pixy.ccc.blocks[i].m_width){
                     num = i;
-                    size = pixy.ccc.blocks[i].m_width;
+                    size = pixy.ccc.blocks[i].m_height;
                     x = pixy.ccc.blocks[i].m_x;
+                    y = pixy.ccc.blocks[i].m_y;
                 }
             }
         }
+        X = x;
+        Size = size;
         if(num == 999){
             cam_able = 0;
         }
@@ -36,6 +40,9 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
         }
         if(50 < abs(dir)){
             cam_able = 0;
+        }
+        if(flag == 1){
+            cam_able = 1;
         }
     }
     else{
@@ -52,10 +59,6 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
         }
     }
 
-    if(flag == 1){
-        cam_able = 1;
-    }
-
     if(cam_able == 0){
         if(b != 0){
             b = 0;
@@ -64,7 +67,7 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
 
         if(tim_cam.read_ms() < 100){
             test = 1;
-            P = -dir * 1.5;
+            P = -dir * 2;
         }
         else{
             P = -dir;
@@ -100,12 +103,12 @@ void Cam::print(){
     }
     else{
         Serial.print("x: ");
-        Serial.print(x);
+        Serial.print(X);
         Serial.print("  ang: ");
         Serial.print(ang);
         Serial.print(" P : ");
         Serial.print(P);
         Serial.print("  size: ");
-        Serial.println(size);
+        Serial.println(Size);
     }
 }

@@ -3,11 +3,6 @@
 #include <Arduino.h>
 #include<MA.h>
 
-#pragma once
-
-#include <Arduino.h>
-#include<MA.h>
-
 class BALL{
   public:
     BALL(){
@@ -24,6 +19,8 @@ class BALL{
     int getBallposition(){
       float x = ball_x.returnAve();
       float y = ball_y.returnAve();
+      x *= 0.05;
+      y *= 0.05;
       if(0 < x){
         x_pos = 130 - x;
       }
