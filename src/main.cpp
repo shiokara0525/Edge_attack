@@ -30,6 +30,7 @@ unsigned int address = 0x00;  //EEPROMのアドレス
 int A = 0;
 
 unsigned int RA_size = 0;  //回り込みの大きさを示す変数
+int Button_selectCF = 0;  //コートの方向を決めるときに特殊なことをするので、セレクト変数を変えときますぜよ
 
 int A_line = 0;  //ライン踏んでるか踏んでないか
 int B_line = 999;  //前回踏んでるか踏んでないか
@@ -86,6 +87,8 @@ void setup(){
   EEPROM.get(address,RA_size);//EEPROMから読み出し(前回取り出した変数からアドレスを取得し、次のアドレスをここで入力する)
   address += sizeof(RA_size);  //アドレスを次の変数のアドレスにする
   EEPROM.get(address,val_max);//EEPROMから読み出し(前回取り出した変数からアドレスを取得し、次のアドレスをここで入力する)
+  address += sizeof(val_max);  //アドレスを次の変数のアドレスにする
+  EEPROM.get(address,Button_selectCF);//EEPROMから読み出し(前回取り出した変数からアドレスを取得し、次のアドレスをここで入力する)
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
@@ -697,7 +700,7 @@ void OLED_set() {
       display.setTextSize(1);
 
       display.setTextColor(WHITE);
-      if(Button_select == 0)  //exitが選択されていたら
+      if(Button_selectCF == 0)  //exitが選択されていたら
       {
         if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
           display.setTextColor(BLACK, WHITE);
@@ -710,20 +713,7 @@ void OLED_set() {
       display.println("Yellow");
 
       display.setTextColor(WHITE);
-      if(Button_select == 1)  //exitが選択されていたら
-      {
-        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
-          display.setTextColor(BLACK, WHITE);
-        }
-        else{
-          display.setTextColor(WHITE);
-        }
-      }
-      display.setCursor(90,30);
-      display.println("Blue");
-
-      display.setTextColor(WHITE);
-      if(Button_select == 2)  //exitが選択されていたら
+      if(Button_selectCF == 1)  //exitが選択されていたら
       {
         if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
           display.setTextColor(BLACK, WHITE);
@@ -735,6 +725,19 @@ void OLED_set() {
       display.setCursor(50,55);
       display.println("Exit");
 
+      display.setTextColor(WHITE);
+      if(Button_selectCF == 2)  //exitが選択されていたら
+      {
+        if(flash_OLED == 0){  //白黒反転　何秒かの周期で白黒が変化するようにタイマーを使っている（flash_OLEDについて調べたらわかる）
+          display.setTextColor(BLACK, WHITE);
+        }
+        else{
+          display.setTextColor(WHITE);
+        }
+      }
+      display.setCursor(90,30);
+      display.println("Blue");
+
       //タクトスイッチが押されたら(手を離されるまで次のステートに行かせたくないため、変数aaを使っている)
       if(aa == 0){
         if(digitalRead(Tact_Switch) == LOW){  //タクトスイッチが押されたら
@@ -742,21 +745,23 @@ void OLED_set() {
         }
       }else{
         if(digitalRead(Tact_Switch) == HIGH){  //タクトスイッチが手から離れたら
-          
-          if(Button_select == 0)  //yellowが選択されていたら
+          if(Button_selectCF == 0)  //yellowが選択されていたら
           {
             court_flag = 0;
              A_OLED = 15;  //スタート画面に行く
           }
-          else if(Button_select == 1)  //blueが選択されていたら
+          else if(Button_selectCF == 2)  //blueが選択されていたら
           {
             court_flag = 1;
             A_OLED = 15;  //スタート画面に行く
           }
-          else if(Button_select == 2)  //exitが選択されていたら
+          else if(Button_selectCF == 1)  //exitが選択されていたら
           {
             A_OLED = 0;  //メニュー画面に戻る
           }
+          address = 0x00;  //EEPROMのアドレスを0x00にする（リセット）
+          address = sizeof(line.LINE_Level) + sizeof(RA_size) + sizeof(val_max);  //アドレスを次の変数のアドレスにする
+          EEPROM.put(address, Button_selectCF);  //EEPROMにボールの閾値を保存
         }
       }
     }
@@ -1304,26 +1309,18 @@ void OLED_set() {
         {
           if(new_encVal > old_encVal)  //回転方向を判定
           {
-            if(Button_select < 2){
-              Button_select++;  //next
-            }
-            else
-            {
-              Button_select = 0;
+            if(Button_selectCF < 2){
+              Button_selectCF++;  //next
             }
           }
           else if(new_encVal < old_encVal)
           {
-            if(Button_select  > 0){
-              Button_select--;  //next
-            }
-            else
-            {
-              Button_select = 2;
+            if(Button_selectCF  > 0){
+              Button_selectCF--;  //next
             }
           }
         }
-        else if(A_OLED == 12 || A_OLED == 15)
+        else if(A_OLED == 15)
         {
           if(new_encVal > old_encVal)  //回転方向を判定
           {
