@@ -225,26 +225,31 @@ void loop(){
       }
 
       if((120 < abs(cam.X - 150) || cam.flag_2 == 0 || 40 < abs(ac.dir) || 3 <= line.Lrange_num) && line_flag_2 == 1){
-        A = 36;
+        A = 35;
       }
 
-      // if(cam.Size < 12 && abs(ac.dir) < 10){
-      //   if(line_flag == 2){
-      //     if((90 < cam.X && cam.X < 110) || (60 < ball.ang && ball.ang < 90)){
-      //       A = 35;
-      //     }
-      //   }
-      //   else if(line_flag == 4){
-      //     if((190 < cam.X && cam.X < 205) || (-90 < ball.ang && ball.ang < -60)){
-      //       A = 35;
-      //     }
-      //   }
-      //   else if(line_flag == 3){
-      //     if((100 < cam.X && cam.X < 200) && (60 < abs(ball.ang) && abs(ball.ang) < 100)){
-      //       A = 35;
-      //     }
-      //   }
-      // }
+      if(cam.Size < 12 && abs(ac.dir) < 10){
+        if(line_flag == 2){
+          if((90 < cam.X && cam.X < 110) && (60 < ball.ang && ball.ang < 90)){
+            A = 36;
+          }
+        }
+        else if(line_flag == 4){
+          if((190 < cam.X && cam.X < 205) && (-90 < ball.ang && ball.ang < -60)){
+            A = 36;
+          }
+        }
+        else if(line_flag == 3){
+          if((cam.X < 100 || 200 < cam.X) && (60 < abs(ball.ang) && abs(ball.ang) < 90)){
+            A = 36;
+          }
+          if((100 < cam.X && cam.X < 200) && (60 < abs(ball.ang) && abs(ball.ang) < 120)){
+            A = 37;
+          }
+        }
+      }
+
+    
       if(line_flag == 0){  //ライン踏んでるけど別に進んでいいよ～って時
         B_line = 0;  //ラインで特に影響受けてないからライン踏んでないのと扱い同じのほうが都合いいよね!
       }
@@ -262,73 +267,9 @@ void loop(){
   }
 
 
-  if(A == 35){  //端から端までライントレース
-    while(30 < abs(ball.ang)){
-      ball.getBallposition();
-      Line_flag = line.getLINE_Vec();
-      AC_val = ac.getAC_val();
-
-      int go_flag = 0;
-      double go_border[2];  //ボールの角度によって進む方向を変えるためのボーダーの変数(ラインに対して垂直な直線で進む角度の区分を分けるイメージ)
-      angle balldir(ball.ang,true);  //ボールの角度を入れるオブジェクト
-
-      if(line.Lvec_Dir < 0){
-        go_border[0] = line.Lvec_Dir;
-        go_border[1] = line.Lvec_Dir + 180;
-      }
-      else{
-        go_border[0] = line.Lvec_Dir - 180;
-        go_border[1] = line.Lvec_Dir;
-      }
-
-      balldir.to_range(go_border[0],false);  //ボールの角度をボーダーの範囲に収める(go_border[0] ~ go_border[1]+180)
-
-      if(go_border[0] < balldir.degree && balldir.degree < go_border[1]){  //ボールの角度を区分分けする
-        go_flag = 0;
-      }
-      else{
-        go_flag = 1;
-      }
-
-      go_ang = go_border[go_flag] + 90;  //進む角度決定
-      go_ang.to_range(180,true);  //進む角度を-180 ~ 180の範囲に収める
 
 
-      if(100 < abs(go_ang.degree)){
-        goval = 90;
-        MOTER.line_val = 2;
-      }
-      else if(abs(go_ang.degree) < 60){
-        goval = val_max;
-        MOTER.line_val = 2;
-      }
-      else{
-        goval = val_max;
-        MOTER.line_val = 0.15;
-      }
-
-
-      if(130 < abs(go_ang.degree) || Line_flag == 0 || 100 < abs(ball.ang)){
-        line_timer.reset();
-        A = 37;
-        break;
-      }
-      else{
-        if(NoneM_flag == 1){
-          OLED_moving();
-        }
-        else{
-          MOTER.moveMoter(go_ang,goval,AC_val,5,line);
-          OLED_moving();
-        }
-      }
-    }
-
-    line_flag = 0;
-  }
-
-
-  if(A == 36){  //前にボールがあるとき下がるやつだよ
+  if(A == 35){  //前にボールがあるとき下がるやつだよ
     timer Timer;
     Timer.reset();
     if(BF_flag == 0){
@@ -375,27 +316,40 @@ void loop(){
   }
 
 
-  if(A == 37){
-    if(160 < abs(line.Lvec_Dir)){
-      Line_flag = 2;
-    }
-    else if(cam.X < 150){
-      Line_flag = 1;
-    }
-    else{
-      Line_flag = 3;
-    }
 
-    while(1){
-      int Line_flag = line.getLINE_Vec();
-      angle line_dir(line.Lvec_Dir,true);
-      float AC_val = ac.getAC_val();
-      go_ang = line.decideGoang(line_dir,Line_flag);
-      MOTER.moveMoter_0(go_ang,goval,AC_val);
+  if(A == 36){
+    go_ang = 0;
+    while(abs(ball.ang) < 90){
+      ball.getBallposition();
+      AC_val = ac.getAC_val();
+      MOTER.moveMoter_0(go_ang,120,AC_val);
       OLED_moving();
-      if(Line_flag == 0){
+
+      if(line.getLINE_Vec() == 1){
         break;
       }
+    }
+    A = 10;
+  }
+
+
+  if(A == 37){
+    if(ball.ang < 0){
+      go_ang = -90;
+    }
+    else{
+      go_ang = 90;
+    }
+
+    while(30 < abs(ball.ang)){
+      ball.getBallposition();
+      AC_val = ac.getAC_val();
+      MOTER.moveMoter_0(go_ang,120,AC_val);
+      OLED_moving();
+
+      if(line.getLINE_Vec() == 1){
+        break;
+      }      
     }
     A = 10;
   }
@@ -407,11 +361,11 @@ void loop(){
     }
     else{
       MOTER.moveMoter_0(go_ang,goval,cam.P);  //モーターの処理
+      OLED_moving();
     }
 
     A = 10;
   }
-  OLED_moving();  //デバック用
 
   if(digitalRead(Tact_Switch) == LOW){
     MOTER.moter_0();
@@ -1625,11 +1579,11 @@ void OLED_moving(){
   display.println(150 - cam.X);    //この中に知りたい変数を入力
 
   display.setCursor(0,30); //4列目
-  display.println("C_F");  //この中に変数名を入力
+  display.println("bcf");  //この中に変数名を入力
   display.setCursor(30,30);
   display.println(":");
   display.setCursor(36,30);
-  display.println(cam.flag_1);    //この中に知りたい変数を入力
+  display.println(ball_catch_flag);    //この中に知りたい変数を入力
 
   display.setCursor(0,40); //5列目
   display.println("LF");  //この中に変数名を入力
@@ -1639,9 +1593,9 @@ void OLED_moving(){
   display.println(line.LINE_on);    //この中に知りたい変数を入力
 
   display.setCursor(0,50); //6列目
-  display.println("bcf");  //この中に変数名を入力
+  display.println("A");  //この中に変数名を入力
   display.setCursor(30,50);
   display.println(":");
   display.setCursor(36,50);
-  display.println(ball_catch_flag);    //この中に知りたい変数を入力
+  display.println(A);    //この中に知りたい変数を入力
 }
