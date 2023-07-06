@@ -19,6 +19,10 @@ class BALL{
     int getBallposition(){
       float x = ball_x.returnAve();
       float y = ball_y.returnAve();
+      if(x == 0 ||  y == 0){
+        flag = 0;
+        return flag;
+      }
       x *= 0.05;
       y *= 0.05;
       if(0 < x){
