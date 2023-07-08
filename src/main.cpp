@@ -122,6 +122,7 @@ void loop(){
         ball_catch_flag = 0;
       }
     }
+    ball_catch_flag = 0;
 
     if(Line_flag == 1){
       ball_catch_flag = 2;
@@ -157,7 +158,7 @@ void loop(){
     }
 
     if(cam.flag_1 == 1){
-      goval = 100;
+      goval = 80;
       ball_far = 40;
       ra_size += 15;
     }
@@ -166,6 +167,7 @@ void loop(){
       ra_size += 5;
       ball_far = 80;
     }
+    
 
     ball_Far = ball_far;
     if(ball.ang < 0){
@@ -228,26 +230,26 @@ void loop(){
         A = 35;
       }
 
-      if(cam.Size < 12 && abs(ac.dir) < 10){
-        if(line_flag == 2){
-          if((90 < cam.X && cam.X < 110) && (60 < ball.ang && ball.ang < 90)){
-            A = 36;
-          }
-        }
-        else if(line_flag == 4){
-          if((190 < cam.X && cam.X < 205) && (-90 < ball.ang && ball.ang < -60)){
-            A = 36;
-          }
-        }
-        else if(line_flag == 3){
-          if((cam.X < 100 || 200 < cam.X) && (60 < abs(ball.ang) && abs(ball.ang) < 90)){
-            A = 36;
-          }
-          if((100 < cam.X && cam.X < 200) && (60 < abs(ball.ang) && abs(ball.ang) < 120)){
-            A = 37;
-          }
-        }
-      }
+      // if(cam.Size < 12 && abs(ac.dir) < 10){
+      //   if(line_flag == 2){
+      //     if((90 < cam.X && cam.X < 110) && (60 < ball.ang && ball.ang < 90)){
+      //       A = 36;
+      //     }
+      //   }
+      //   else if(line_flag == 4){
+      //     if((190 < cam.X && cam.X < 205) && (-90 < ball.ang && ball.ang < -60)){
+      //       A = 36;
+      //     }
+      //   }
+      //   else if(line_flag == 3){
+      //     if((cam.X < 100 || 200 < cam.X) && (60 < abs(ball.ang) && abs(ball.ang) < 90)){
+      //       A = 36;
+      //     }
+      //     if((100 < cam.X && cam.X < 200) && (60 < abs(ball.ang) && abs(ball.ang) < 120)){
+      //       A = 37;
+      //     }
+      //   }
+      // }
 
     
       if(line_flag == 0){  //ライン踏んでるけど別に進んでいいよ～って時
@@ -324,10 +326,6 @@ void loop(){
       AC_val = ac.getAC_val();
       MOTER.moveMoter_0(go_ang,120,AC_val);
       OLED_moving();
-
-      if(line.getLINE_Vec() == 1){
-        break;
-      }
     }
     A = 10;
   }
@@ -345,11 +343,7 @@ void loop(){
       ball.getBallposition();
       AC_val = ac.getAC_val();
       MOTER.moveMoter_0(go_ang,120,AC_val);
-      OLED_moving();
-
-      if(line.getLINE_Vec() == 1){
-        break;
-      }      
+      OLED_moving(); 
     }
     A = 10;
   }
@@ -361,7 +355,7 @@ void loop(){
     }
     else{
       MOTER.moveMoter_0(go_ang,goval,cam.P);  //モーターの処理
-      OLED_moving();
+      //OLED_moving();
     }
 
     A = 10;
@@ -1583,7 +1577,7 @@ void OLED_moving(){
   display.setCursor(30,30);
   display.println(":");
   display.setCursor(36,30);
-  display.println(ball_catch_flag);    //この中に知りたい変数を入力
+  display.println(analogRead(ball_catch));    //この中に知りたい変数を入力
 
   display.setCursor(0,40); //5列目
   display.println("LF");  //この中に変数名を入力

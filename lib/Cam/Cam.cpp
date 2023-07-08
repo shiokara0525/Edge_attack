@@ -87,8 +87,8 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
             tim_cam.reset();            
         }
 
-        if(tim_cam.read_ms() < 180){
-            P = (150 - x) * 1.35;
+        if(tim_cam.read_ms() < 250){
+            P = (150 - x) * 1.00;
             flag_1 = 1;
             test = 3;
         }

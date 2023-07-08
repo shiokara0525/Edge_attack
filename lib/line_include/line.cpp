@@ -99,17 +99,14 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
     data_sum[i] = 0; //合計値をリセット
     Lnone = 0; //ラインセンサの上にラインがあるということを数えるをリセット(一つのセンサごとに)
 
-    // Serial.print(data_ave[i]); //ラインセンサの値をシリアルモニタに表示
-    // Serial.print(" ");
+    Serial.print(data_ave[i]); //ラインセンサの値をシリアルモニタに表示
+    Serial.print(" ");
   }
-  //Serial.println();
-  // data_ave[4] = 0;
-  // data_ave[8] = 0;
-  // data_ave[20] = 0;
+  Serial.println();
 
   for(int i=0; i<24; i++) //24個のラインセンサを指定する
   {
-    data_ave[i] *= 5;
+    
     if(data_ave[i] > LINE_Level) //ラインセンサの値が閾値より大きければ（ラインセンサの上にラインあり）
     {
       if(detecting == 0) //前のラインセンサが検知していなければ
