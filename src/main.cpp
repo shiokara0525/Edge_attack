@@ -26,6 +26,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define LOGO_HEIGHT   16
 #define LOGO_WIDTH    16
 
+const int bluetooth = 11;
 const int Encoder_A = 17;  //エンコーダーのピン番号
 const int Encoder_B = 16;  //エンコーダーのピン番号
 Encoder myEnc(17, 16);  //エンコーダのピン番号
@@ -361,7 +362,7 @@ void loop(){
     A = 10;
   }
 
-  if(digitalRead(Tact_Switch) == LOW){
+  if(digitalRead(bluetooth) == HIGH){
     MOTER.moter_0();
     toogle = digitalRead(Toggle_Switch);
     OLED();
@@ -1002,7 +1003,7 @@ void OLED() {
           aa = 0;
         }
       }
-      if(digitalRead(Toggle_Switch) != toogle)  //
+      if(digitalRead(bluetooth) == LOW)  //
       {
         display.clearDisplay(); //初期化してI2Cバスを解放する
         break;
