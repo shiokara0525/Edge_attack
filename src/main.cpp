@@ -104,6 +104,14 @@ void setup(){
 
 
 void loop(){
+  while(digitalRead(bluetooth) == HIGH){
+    MOTER.moter_0();
+    if(digitalRead(Tact_Switch) == LOW){
+      if(digitalRead(Tact_Switch) == HIGH){
+        break;
+      }
+    }
+  }
   double AC_val = 100;  //姿勢制御の最終的な値を入れるグローバル変数
   angle go_ang(0,true);
   float ra_size = RA_size;
@@ -190,6 +198,10 @@ void loop(){
     go_ang.to_range(180,true);
     if(ball_catch_flag == 1){
       go_ang = 0;
+    }
+
+    if(abs(ball.ang) < 25){
+      goval += 20;
     }
 
     A = 30;  //次はライン読むよ!!
@@ -362,7 +374,7 @@ void loop(){
     A = 10;
   }
 
-  if(digitalRead(bluetooth) == HIGH){
+  if(digitalRead(Tact_Switch) == LOW){
     MOTER.moter_0();
     toogle = digitalRead(Toggle_Switch);
     OLED();
@@ -1003,7 +1015,7 @@ void OLED() {
           aa = 0;
         }
       }
-      if(digitalRead(bluetooth) == LOW)  //
+      if(digitalRead(Toggle_Switch) != toogle)  //
       {
         display.clearDisplay(); //初期化してI2Cバスを解放する
         break;
@@ -1090,17 +1102,6 @@ void OLED() {
       Bx = line_x + line_y * sqrt(9 - pow(line.Lvec_Long, 2)) / line.Lvec_Long;
       By = line_y - line_x * sqrt(9 - pow(line.Lvec_Long, 2)) / line.Lvec_Long;
 
-      Serial.print(line_x);
-      Serial.print(" ");
-      Serial.print(line_y);
-      Serial.print(" | ");
-      Serial.print(Ax);
-      Serial.print(" ");
-      Serial.print(Ay);
-      Serial.print(" ");
-      Serial.print(Bx);
-      Serial.print(" ");
-      Serial.println(By);
 
       //ラインの線の座標をOLEDでの座標に変換(-1~1の値を0~60の値に変換)
       OLED_line_ax = map(Ax, 3, -3, 60, 0);  //ラインの線のA点のx座標
