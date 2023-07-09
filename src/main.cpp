@@ -66,7 +66,6 @@ const double pi = 3.1415926535897932384;  //円周率
 float ball_Far = 0;
 const int ball_catch = A14;
 int ball_catch_flag = 0;
-int stop_flag = 0;
 int B_bcf = 999;
 int cam_flag = 0;
 int val_max = 150;
@@ -106,7 +105,7 @@ void setup(){
 
 
 void loop(){
-  stop_flag = 1;
+  int stop_flag = 0;
   // while(digitalRead(bluetooth) == HIGH){
   //   MOTER.moter_0();
   //   if(digitalRead(Tact_Switch) == LOW){
@@ -132,13 +131,17 @@ void loop(){
 
     if(abs(ball.ang) < 20 && 1000 < Timer.read_ms()){
       if(BF_flag != 1){
+        BF_flag = 1;
         F_timer.reset();
       }
       if(500 < F_timer.read_ms()){
+        F_timer.reset();
+        go_ang = 0;
         while(1){
           cam.getCamdata(ac.getnowdir(),ball.ang,ball_catch_flag);
-          MOTER.moveMoter_0(go_ang,100,cam.P);
-          if(line.getLINE_Vec() == 1 || 20 < abs(ball.ang)){
+          MOTER.moveMoter_0(go_ang,230,cam.P);
+          ball.getBallposition();
+          if(line.getLINE_Vec() == 1 || 20 < abs(ball.ang) || 1000 < F_timer.read_ms()){
             Timer.reset();
             break;
           }
@@ -148,6 +151,13 @@ void loop(){
         stop_flag = 999;
       }
     }
+    else{
+      if(BF_flag != 0){
+        BF_flag = 0;
+        F_timer.reset();
+      }
+    }
+    
 
     if(abs(ball.ang) < 60){
       if(ball.ang < 0){
@@ -195,6 +205,9 @@ void loop(){
         }
         MOTER.moter_0();
         delay(75);
+      if(line_flag == 1){
+        A = 35;
+      }
       }
       else{  //連続でライン踏んでるとき
         go_ang = line.decideGoang(linedir,line_flag);
@@ -237,6 +250,42 @@ void loop(){
     }
   }
 
+  if(A == 35){  //前にボールがあるとき下がるやつだよ
+    timer Timer;
+    Timer.reset();
+    go_ang = 179.9;
+
+    while(1){  //前方向にボールがあるとき
+      go_ang = 179.9 - ac.dir;
+      cam.getCamdata(ac.getnowdir(),ball.ang,1);
+      ball.getBallposition();
+      if(NoneM_flag == 0){
+        if(Timer.read_ms() < 250){  //下がる(0.35秒)
+          MOTER.moveMoter(go_ang,goval,cam.P,0,line);
+        }
+        else{  //止まるよ
+          MOTER.moter_ac(cam.P);
+          flag = 1;
+          if(BF_flag == 1){
+            break;
+          }
+        }
+      }
+      else{
+        OLED_moving();  //デバック用
+      }
+
+      if(BF_flag == 0){
+        if(700 < Timer.read_ms() || line.getLINE_Vec() == 1){
+          break;  //1.1秒経つorライン踏んだら抜けるよ
+        }
+      }
+
+    }
+    A = 10;
+  }
+
+  
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
     if(NoneM_flag == 1){
       OLED_moving();  //デバック用
