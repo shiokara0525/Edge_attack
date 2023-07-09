@@ -35,7 +35,14 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
             cam_able = 0;
         }
         if(flag == 1){
-            cam_able = 1;
+            P = (150 - x) * 0.3;
+            if(P < 15){
+                test = 1l;
+            }
+            else{
+                test = 10;
+            }
+            return 1;
         }
         else if(flag == 2){
             cam_able = 2;
@@ -88,12 +95,12 @@ int Cam::getCamdata(float dir,float ball_ang,int flag){
         }
 
         if(tim_cam.read_ms() < 250){
-            P = (150 - x) * 1.00;
+            P = (150 - x) * 0.69;
             flag_1 = 1;
             test = 3;
         }
         else{
-            P = (150 - x) * 0.5;
+            P = (150 - x) * 0.3;
             flag_1 = 2;
             test = 4;
         }

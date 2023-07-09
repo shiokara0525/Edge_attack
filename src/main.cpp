@@ -104,14 +104,14 @@ void setup(){
 
 
 void loop(){
-  while(digitalRead(bluetooth) == HIGH){
-    MOTER.moter_0();
-    if(digitalRead(Tact_Switch) == LOW){
-      if(digitalRead(Tact_Switch) == HIGH){
-        break;
-      }
-    }
-  }
+  // while(digitalRead(bluetooth) == HIGH){
+  //   MOTER.moter_0();
+  //   if(digitalRead(Tact_Switch) == LOW){
+  //     if(digitalRead(Tact_Switch) == HIGH){
+  //       break;
+  //     }
+  //   }
+  // }
   double AC_val = 100;  //姿勢制御の最終的な値を入れるグローバル変数
   angle go_ang(0,true);
   float ra_size = RA_size;
@@ -119,36 +119,87 @@ void loop(){
   int Line_flag = 0;  //ライン踏んでるか踏んでないか
   int goval = val_max;  //動くスピード決定
 
+  if(A == 0){
+    while(1){
+      AC_val = ac.getAC_val();
+      go_ang = 90;
+      MOTER.moveMoter_0(go_ang,120,AC_val);
+      if(line.getLINE_Vec() == 1){
+        break;
+      }
+    }
+    A = 1;
+  }
 
-  if(A == 10){  //情報入手
-    ball.getBallposition();  //ボールの位置取得
-    Line_flag = line.getLINE_Vec();      //ライン踏んでるか踏んでないかを判定
-    if(abs(ball.ang) < 20){
-      if(analogRead(ball_catch) < 800){
-        ball_catch_flag = 1;
+
+  if(A == 1){  //端から端までライントレース
+    while(1){
+      ball.getBallposition();
+      Line_flag = line.getLINE_Vec();
+      AC_val = ac.getAC_val();
+
+      int go_flag = 0;
+      double go_border[2];  //ボールの角度によって進む方向を変えるためのボーダーの変数(ラインに対して垂直な直線で進む角度の区分を分けるイメージ)
+      angle balldir(ball.ang,true);  //ボールの角度を入れるオブジェクト
+
+      if(line.Lvec_Dir < 0){
+        go_border[0] = line.Lvec_Dir;
+        go_border[1] = line.Lvec_Dir + 180;
       }
       else{
-        ball_catch_flag = 0;
+        go_border[0] = line.Lvec_Dir - 180;
+        go_border[1] = line.Lvec_Dir;
+      }
+
+      balldir.to_range(go_border[0],false);  //ボールの角度をボーダーの範囲に収める(go_border[0] ~ go_border[1]+180)
+
+      if(go_border[0] < balldir.degree && balldir.degree < go_border[1]){  //ボールの角度を区分分けする
+        go_flag = 0;
+      }
+      else{
+        go_flag = 1;
+      }
+
+      go_ang = go_border[go_flag] + 90;  //進む角度決定
+      go_ang.to_range(180,true);  //進む角度を-180 ~ 180の範囲に収める
+
+
+      if(100 < abs(go_ang.degree)){
+        goval = 90;
+        MOTER.line_val = 2;
+      }
+      else if(abs(go_ang.degree) < 60){
+        goval = val_max;
+        MOTER.line_val = 2;
+      }
+      else{
+        goval = val_max;
+        MOTER.line_val = 0.15;
+      }
+
+      for(int i = 0; i < 2; i++){
+        if((go_border[i] - 10 < ball.ang && ball.ang < go_border[i] + 10)){  //正面方向にボールがあったら停止するよ
+          break;
+        }
+      }
+
+
+      if(Line_flag == 0){
+        line_timer.reset();
+        break;
+      }
+      else{
+        if(NoneM_flag == 1){
+          OLED_moving();
+        }
+        else{
+          MOTER.moveMoter(go_ang,goval,AC_val,5,line);
+          OLED_moving();
+        }
       }
     }
-    ball_catch_flag = 0;
-
-    if(Line_flag == 1){
-      ball_catch_flag = 2;
-    }
-    cam_flag = cam.getCamdata(ac.getnowdir(),ball.ang,ball_catch_flag);  //姿勢制御の値入手
     A = 20;
   }
-
-
-  if(A == 15){
-    while(1){
-      MOTER.moter_0();
-      ball.getBallposition();
-    }
-    A = 30;
-  }
-
 
   if(A == 20){  //進む角度決めるとこ
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
@@ -157,7 +208,7 @@ void loop(){
       ball_far = 40;
     }
     else if(ball_far < 65){
-      ball_far = 55;
+      ball_far = 55; 
     }
     else if(ball_far < 80){
       ball_far = 80;
@@ -363,7 +414,10 @@ void loop(){
 
 
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
-    if(NoneM_flag == 1){
+    if(cam.flag_1 == 1){
+      MOTER.moter_ac(cam.P);
+    }
+    else if(NoneM_flag == 1){
       OLED_moving();  //デバック用
     }
     else{
