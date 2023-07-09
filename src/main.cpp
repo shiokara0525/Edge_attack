@@ -26,6 +26,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define LOGO_HEIGHT   16
 #define LOGO_WIDTH    16
 
+const int bluetooth = 11;
 const int Encoder_A = 17;  //エンコーダーのピン番号
 const int Encoder_B = 16;  //エンコーダーのピン番号
 Encoder myEnc(17, 16);  //エンコーダのピン番号
@@ -103,6 +104,14 @@ void setup(){
 
 
 void loop(){
+  while(digitalRead(bluetooth) == HIGH){
+    MOTER.moter_0();
+    if(digitalRead(Tact_Switch) == LOW){
+      if(digitalRead(Tact_Switch) == HIGH){
+        break;
+      }
+    }
+  }
   double AC_val = 100;  //姿勢制御の最終的な値を入れるグローバル変数
   angle go_ang(0,true);
   float ra_size = RA_size;
@@ -122,6 +131,7 @@ void loop(){
         ball_catch_flag = 0;
       }
     }
+    ball_catch_flag = 0;
 
     if(Line_flag == 1){
       ball_catch_flag = 2;
@@ -157,7 +167,7 @@ void loop(){
     }
 
     if(cam.flag_1 == 1){
-      goval = 100;
+      goval = 80;
       ball_far = 40;
       ra_size += 15;
     }
@@ -166,6 +176,7 @@ void loop(){
       ra_size += 5;
       ball_far = 80;
     }
+    
 
     ball_Far = ball_far;
     if(ball.ang < 0){
@@ -187,6 +198,10 @@ void loop(){
     go_ang.to_range(180,true);
     if(ball_catch_flag == 1){
       go_ang = 0;
+    }
+
+    if(abs(ball.ang) < 25){
+      goval += 20;
     }
 
     A = 30;  //次はライン読むよ!!
@@ -228,26 +243,26 @@ void loop(){
         A = 35;
       }
 
-      if(cam.Size < 12 && abs(ac.dir) < 10){
-        if(line_flag == 2){
-          if((90 < cam.X && cam.X < 110) && (60 < ball.ang && ball.ang < 90)){
-            A = 36;
-          }
-        }
-        else if(line_flag == 4){
-          if((190 < cam.X && cam.X < 205) && (-90 < ball.ang && ball.ang < -60)){
-            A = 36;
-          }
-        }
-        else if(line_flag == 3){
-          if((cam.X < 100 || 200 < cam.X) && (60 < abs(ball.ang) && abs(ball.ang) < 90)){
-            A = 36;
-          }
-          if((100 < cam.X && cam.X < 200) && (60 < abs(ball.ang) && abs(ball.ang) < 120)){
-            A = 37;
-          }
-        }
-      }
+      // if(cam.Size < 12 && abs(ac.dir) < 10){
+      //   if(line_flag == 2){
+      //     if((90 < cam.X && cam.X < 110) && (60 < ball.ang && ball.ang < 90)){
+      //       A = 36;
+      //     }
+      //   }
+      //   else if(line_flag == 4){
+      //     if((190 < cam.X && cam.X < 205) && (-90 < ball.ang && ball.ang < -60)){
+      //       A = 36;
+      //     }
+      //   }
+      //   else if(line_flag == 3){
+      //     if((cam.X < 100 || 200 < cam.X) && (60 < abs(ball.ang) && abs(ball.ang) < 90)){
+      //       A = 36;
+      //     }
+      //     if((100 < cam.X && cam.X < 200) && (60 < abs(ball.ang) && abs(ball.ang) < 120)){
+      //       A = 37;
+      //     }
+      //   }
+      // }
 
     
       if(line_flag == 0){  //ライン踏んでるけど別に進んでいいよ～って時
@@ -324,10 +339,6 @@ void loop(){
       AC_val = ac.getAC_val();
       MOTER.moveMoter_0(go_ang,120,AC_val);
       OLED_moving();
-
-      if(line.getLINE_Vec() == 1){
-        break;
-      }
     }
     A = 10;
   }
@@ -345,11 +356,7 @@ void loop(){
       ball.getBallposition();
       AC_val = ac.getAC_val();
       MOTER.moveMoter_0(go_ang,120,AC_val);
-      OLED_moving();
-
-      if(line.getLINE_Vec() == 1){
-        break;
-      }      
+      OLED_moving(); 
     }
     A = 10;
   }
@@ -361,7 +368,7 @@ void loop(){
     }
     else{
       MOTER.moveMoter_0(go_ang,goval,cam.P);  //モーターの処理
-      OLED_moving();
+      //OLED_moving();
     }
 
     A = 10;
@@ -1095,17 +1102,6 @@ void OLED() {
       Bx = line_x + line_y * sqrt(9 - pow(line.Lvec_Long, 2)) / line.Lvec_Long;
       By = line_y - line_x * sqrt(9 - pow(line.Lvec_Long, 2)) / line.Lvec_Long;
 
-      Serial.print(line_x);
-      Serial.print(" ");
-      Serial.print(line_y);
-      Serial.print(" | ");
-      Serial.print(Ax);
-      Serial.print(" ");
-      Serial.print(Ay);
-      Serial.print(" ");
-      Serial.print(Bx);
-      Serial.print(" ");
-      Serial.println(By);
 
       //ラインの線の座標をOLEDでの座標に変換(-1~1の値を0~60の値に変換)
       OLED_line_ax = map(Ax, 3, -3, 60, 0);  //ラインの線のA点のx座標
@@ -1583,7 +1579,7 @@ void OLED_moving(){
   display.setCursor(30,30);
   display.println(":");
   display.setCursor(36,30);
-  display.println(ball_catch_flag);    //この中に知りたい変数を入力
+  display.println(analogRead(ball_catch));    //この中に知りたい変数を入力
 
   display.setCursor(0,40); //5列目
   display.println("LF");  //この中に変数名を入力
