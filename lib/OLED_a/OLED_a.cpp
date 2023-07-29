@@ -661,13 +661,13 @@ void oled_attack::OLED() {
       display.drawCircle(32, 32, 30, WHITE);  //○ 20
 
       //ラインの直線と円の交点の座標を求める
-      line_y = line.Lvec_Long * cos(line.Lrad);  //ラインのx座標
-      line_x = line.Lvec_Long * sin(line.Lrad);  //ラインのy座標
+      line_y = line.dis * cos(line.Lrad);  //ラインのx座標
+      line_x = line.dis * sin(line.Lrad);  //ラインのy座標
 
-      Ax = line_x - line_y * sqrt(9 - pow(line.Lvec_Long, 2)) / line.Lvec_Long;
-      Ay = line_y + line_x * sqrt(9 - pow(line.Lvec_Long, 2)) / line.Lvec_Long;
-      Bx = line_x + line_y * sqrt(9 - pow(line.Lvec_Long, 2)) / line.Lvec_Long;
-      By = line_y - line_x * sqrt(9 - pow(line.Lvec_Long, 2)) / line.Lvec_Long;
+      Ax = line_x - line_y * sqrt(9 - pow(line.dis, 2)) / line.dis;
+      Ay = line_y + line_x * sqrt(9 - pow(line.dis, 2)) / line.dis;
+      Bx = line_x + line_y * sqrt(9 - pow(line.dis, 2)) / line.dis;
+      By = line_y - line_x * sqrt(9 - pow(line.dis, 2)) / line.dis;
 
 
       //ラインの線の座標をOLEDでの座標に変換(-1~1の値を0~60の値に変換)
@@ -696,7 +696,7 @@ void oled_attack::OLED() {
       display.println("Dir:");
       if(line.LINE_on == 1){  //ラインがロボットの下にある
         display.setCursor(96,25);
-        display.println(int(line.Lvec_Dir));
+        display.println(int(line.ang));
       }
       else{  //ラインがロボットの下にない
         display.fillRect(96, 25, 34, 10, WHITE);
@@ -707,7 +707,7 @@ void oled_attack::OLED() {
       display.println("far:");
       if(line.LINE_on == 1){  //ラインがロボットの下にある
         display.setCursor(96,39);
-        display.println(line.Lvec_Long);
+        display.println(line.dis);
       }
       else{  //ラインがロボットの下にない
         display.fillRect(96, 39, 34, 10, WHITE);
