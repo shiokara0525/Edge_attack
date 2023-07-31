@@ -8,8 +8,8 @@
 class motor_attack{
     public:
         motor_attack();
-        void moveMoter_L(angle ang,int val,double ac_val,LINE line);
-        void moveMoter_0(angle ang,int val,double ac_val);
+        void moveMotor_L(angle ang,int val,double ac_val,LINE line);
+        void moveMotor_0(angle ang,int val,double ac_val);
         void motor_0();
         void motor_ac(float);
         int line_val = 2;
@@ -19,5 +19,6 @@ class motor_attack{
         const int ena[4] = {5,3,9,7};
         double mSin[4] = {1,1,-1,-1};  //行列式のsinの値
         double mCos[4] = {1,-1,-1,1};  //行列式のcosの値
-        MA Moter[4];
+        MA Motor[4];
+        float Moutput(int,float);
 };

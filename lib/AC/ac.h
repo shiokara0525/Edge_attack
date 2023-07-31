@@ -6,6 +6,7 @@
 #include <Adafruit_SPIDevice.h>
 #include <MA.h>
 #include <angle.h>
+#include<timer.h>
 
 
 class AC{
@@ -22,10 +23,11 @@ public:
 
   double kkp = 0;  //比例制御の値
   double kkd = 0;  //微分制御の値
-  double kki = 0;  //積分制御の値
 
   double val = 0;  //姿勢制御の値
+  double kkp_old = 0;  //前Fの方向
   float first;
+  int Time;
 
 private:
   double nowTime = 0;  //関数で見た時の時間
@@ -33,13 +35,14 @@ private:
 
   double val_old = 0;  //1F前の姿勢制御の値
 
-  double kkp_old = 0;  //前Fの方向
-
   const float kp = 1.8;  //比例制御の係数
   const float kd = 0.12; //微分制御の係数
-  const float ki = 1;
   const float time = 100 / 3;
+
+  const float kp_c = kp / 4;
+  const float kd_c = kd / 4;
 
   sensors_event_t event;  //ジャイロのいろんな値入れるやつ
   Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
+  timer ac_timer;
 };

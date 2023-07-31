@@ -17,8 +17,6 @@ extern Cam cam;
 extern BALL ball;
 extern LINE line;
 extern motor_attack MOTOR;
-extern int RA_size;
-extern int val_max;
 
 /*------------------------------------------------------------------------------------------------------------*/
 
@@ -50,5 +48,7 @@ class oled_attack{
 
     int Tact_Switch = 15;
     const int Toggle_Switch = 14;  //スイッチのピン番号
+    int RA_size;
+    int val_max;
 };
 /*------------------------------------------------------------------------------------------------------------*/
