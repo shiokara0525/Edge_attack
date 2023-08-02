@@ -838,7 +838,7 @@ void oled_attack::OLED() {
       //ボールの角度を表示する
       display.setCursor(68,24);
       display.println("Dir:");
-      if(ball.flag == 1){  //ボールがあれば値を表示
+      if(1){  //ボールがあれば値を表示
         display.setCursor(96,24);
         display.println(int(ball.ang));
       }
@@ -849,7 +849,7 @@ void oled_attack::OLED() {
       //ボールの距離を表示する
       display.setCursor(68,38);
       display.println("far:");
-      if(ball.flag == 1){  //ボールがあれば値を表示
+      if(1){  //ボールがあれば値を表示
         display.setCursor(96,38);
         display.println(int(ball.far));
       }
