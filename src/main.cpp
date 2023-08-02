@@ -126,7 +126,6 @@ void loop(){
 
 
   if(A == 30){  //ライン読むところ
-    A = 40;
     if(Line_flag == 1){  //ラインがオンだったら
       A_line = 1;
       angle linedir(line.ang,true);
@@ -140,14 +139,6 @@ void loop(){
         line_flag_2 = line.switchLineflag(linedir_2);
 
         go_ang = line.decideGoang(linedir,line_flag);
-        if(3 <= line.num){
-          if(abs(ball.ang) < 90){
-            go_ang = 179.9;
-          }
-          else{
-            go_ang = 0;
-          }
-        }
         MOTOR.motor_0();
         delay(50);
       }
@@ -155,23 +146,22 @@ void loop(){
         go_ang = line.decideGoang(linedir,line_flag);
       }
 
-      if((120 < abs(cam.X - 150) || 3 <= line.num || cam.on == 0) && line_flag_2 == 1){
+      if((40 < abs(ac.dir) || 3 <= line.num || cam.on == 0) && line_flag_2 == 1){
         A = 35;
       }
-
-    
-      if(line_flag == 0){  //ライン踏んでるけど別に進んでいいよ～って時
-        B_line = 0;  //ラインで特に影響受けてないからライン踏んでないのと扱い同じのほうが都合いいよね!
+      else{
+        A = 40;
       }
+
     }
     else if(Line_flag == 0){  //ラインを踏んでなかったら
       A_line = 0;
       if(A_line != B_line){  //前回までライン踏んでたら
         B_line = A_line;  //今回はライン踏んでないよ
       }
-      if(A != 36){
-        line_flag = 0;
-      }
+      line_flag = 0;
+      line_flag_2 = 0;
+      A = 40;
     }
   }
 
@@ -186,7 +176,7 @@ void loop(){
       cam_flag = cam.getCamdata();
       AC_val = AC_ch();
       if(Timer.read_ms() < 300){  //下がる(0.35秒)
-        MOTOR.moveMotor_0(go_ang,goval,AC_val);
+        MOTOR.moveMotor_0(go_ang,goval,AC_val,AC_A);
       }
       else{  //止まるよ
         MOTOR.motor_ac(AC_val);
@@ -202,8 +192,10 @@ void loop(){
 
 
   if(A == 40){  //最終的に処理するとこ(モーターとかも) 
-    MOTOR.moveMotor_0(go_ang,goval,AC_val);  //モーターの処理
-    OLED_moving();
+    MOTOR.moveMotor_0(go_ang,goval,AC_val,AC_A);  //モーターの処理
+    if(MOTOR.NoneM_flag == 1){
+      OLED_moving();
+    }
     V = goval;
     A = 10;
   }
@@ -253,25 +245,25 @@ void OLED_moving(){
   OLED.display.println(ball.ang);    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,30); //4列目
-  OLED.display.println("cam");  //この中に変数名を入力
+  OLED.display.println("A");  //この中に変数名を入力
   OLED.display.setCursor(30,30);
   OLED.display.println(":");
   OLED.display.setCursor(36,30);
-  OLED.display.println(cam.on);    //この中に知りたい変数を入力
+  OLED.display.println(A);    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,40); //5列目
-  OLED.display.println("c_x");  //この中に変数名を入力
+  OLED.display.println("LF");  //この中に変数名を入力
   OLED.display.setCursor(30,40);
   OLED.display.println(":");
   OLED.display.setCursor(36,40);
-  OLED.display.println(cam.X);    //この中に知りたい変数を入力
+  OLED.display.println(line_flag);    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,50); //6列目
-  OLED.display.println("");  //この中に変数名を入力
+  OLED.display.println("LF2");  //この中に変数名を入力
   OLED.display.setCursor(30,50);
   OLED.display.println(":");
   OLED.display.setCursor(36,50);
-  OLED.display.println();    //この中に知りたい変数を入力
+  OLED.display.println(line_flag_2);    //この中に知りたい変数を入力
 }
 
 
@@ -308,7 +300,7 @@ float AC_ch(){
       cam_T.reset();
     }
     AC_val = ac.getCam_val(cam.X);
-    while(cam.getCamdata() == 1 && cam_T.read_ms() < 200){
+    while(cam.getCamdata() == 1 && cam_T.read_ms() < 100){
       AC_val = ac.getCam_val(cam.X);
       MOTOR.motor_ac(AC_val);
     }

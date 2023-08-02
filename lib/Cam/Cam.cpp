@@ -13,6 +13,7 @@ int Cam::getCamdata(){
     pixy.ccc.getBlocks();
     int size = 0;
     int x = 0;
+    int num = 999;
     if(pixy.ccc.numBlocks){
         A = 1;
         if(B != A){
@@ -24,12 +25,16 @@ int Cam::getCamdata(){
                 if(size < pixy.ccc.blocks[i].m_height){
                     size = pixy.ccc.blocks[i].m_height;
                     x = pixy.ccc.blocks[i].m_x;
+                    num = i;
                 }
             }
         }
         X = cx.demandAve(x);
         Size = size;
         on = 1;
+        if(num == 999){
+            on = 0;
+        }
     }
     else{
         A = 0;

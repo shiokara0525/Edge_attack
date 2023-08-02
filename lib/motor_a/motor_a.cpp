@@ -53,12 +53,14 @@ void motor_attack::moveMotor_L(angle ang,int val,double ac_val,LINE line){  //�
     if(NoneM_flag == 0){
       Moutput(i,Mval[i]);
     }
-
+  }
+  if(NoneM_flag == 1){
+    OLED_moving();
   }
 }
 
 
-void motor_attack::moveMotor_0(angle ang,int val,double ac_val){
+void motor_attack::moveMotor_0(angle ang,int val,double ac_val,int flag){
   double g = 0;                //モーターの最終的に出る最終的な値の比の基準になる値
   double h = 0;
   double Mval[4] = {0,0,0,0};  //モーターの値×4
@@ -87,29 +89,42 @@ void motor_attack::moveMotor_0(angle ang,int val,double ac_val){
   }
 
   for(int i = 0; i < 4; i++){  //モーターの値を計算するところだよ
-    
-    if(i == 0 || i == 3){
-      Mval[i] = Mval[i] / h * max_val;  //モーターの値を計算(進みたいベクトルの値と姿勢制御の値を合わせる)
+    if(flag == 0){
+      Mval[i] = Mval[i] / h * max_val + ac_val;  //モーターの値を計算(進みたいベクトルの値と姿勢制御の値を合わせる)
     }
-    else{
-      Mval[i] = Mval[i] / h * max_val + ac_val * 2.0;  //モーターの値を計算(進みたいベクトルの値と姿勢制御の値を合わせる)
+    else if(flag == 1){
+      if(i == 0 || i == 3){
+        Mval[i] = Mval[i] / h * max_val;  //モーターの値を計算(進みたいベクトルの値と姿勢制御の値を合わせる)
+      }
+      else{
+        Mval[i] = Mval[i] / h * max_val + ac_val * 1.7;  //モーターの値を計算(進みたいベクトルの値と姿勢制御の値を合わせる)
+      }
     }
 
     if(NoneM_flag == 0){
       Moutput(i,Mval[i]);
     }
   }
+  if(NoneM_flag == 1){
+    OLED_moving();
+  }
 }
 
 
 void motor_attack::motor_ac(float ac_val){
-  if(150 < abs(ac_val)){
-    ac_val = (ac_val < 0 ? -150 : 150);
-  }
+  ac_val *= 1.7;
   for(int i = 0; i < 4; i++){
-    if(NoneM_flag == 0){
-      Moutput(i,ac_val);
+    if(i == 1 || i == 2){
+      if(NoneM_flag == 0){
+        Moutput(i,ac_val);
+      }
     }
+    else{
+      Moutput(i,0);
+    }
+  }
+  if(NoneM_flag == 1){
+    OLED_moving();
   }
 }
 
@@ -119,6 +134,9 @@ void motor_attack::motor_0(){  //モーターの値を0にする関数
     digitalWrite(pah[i],LOW);
     analogWrite(ena[i],0);
     Motor[i].reset();
+  }
+  if(NoneM_flag == 1){
+    OLED_moving();
   }
 }
 

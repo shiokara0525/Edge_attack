@@ -3,13 +3,14 @@
 #include<angle.h>
 #include<MA.h>
 #include<line.h>
-#define motor_max 3              //移動平均で使う配列の大きさ
+#define motor_max 3     //移動平均で使う配列の大きさ
+extern void OLED_moving();
 
 class motor_attack{
     public:
         motor_attack();
         void moveMotor_L(angle ang,int val,double ac_val,LINE line);
-        void moveMotor_0(angle ang,int val,double ac_val);
+        void moveMotor_0(angle ang,int val,double ac_val,int flag);
         void motor_0();
         void motor_ac(float);
         int line_val = 2;
