@@ -44,6 +44,9 @@ const int ball_catch = A14;
 int ball_catch_flag = 0;
 float dif;
 float dif_2;
+float ang_old = 0;
+float b_d;
+MA B_D;
 
 //カメラの変数
 int cam_flag = 0;
@@ -59,6 +62,7 @@ LINE line;  //ラインのオブジェクトだよ(基本的にラインの判�
 motor_attack MOTOR;
 Cam cam;
 oled_attack OLED;
+timer Timer;
 
 /*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
 
@@ -69,6 +73,8 @@ void setup(){
   ac.setup();
   line.setup();
   OLED.OLED();
+  B_D.setLenth(10);
+  B_D.reset();
   GV = OLED.val_max;
   RA = OLED.RA_size;
   A = 10;
@@ -106,9 +112,19 @@ void loop(){
 
 
   if(A == 20){  //進む角度決めるとこ
+    if(30 < abs(ball.ang) && B_D.demandAve(abs(ball.ang - ang_old)) < 4.0){
+      ra_size += 7.5;
+    }
+    if(abs(ball.ang) < 10){
+      goval += 10;
+    }
+    else if(AC_A == 1 && (30 < abs(ball.ang) && abs(ball.ang) < 75)){
+      goval -= 15;
+      ra_size += 5.0;
+    }
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
     dif_2 = abs(ball.ang) * 0.003;
-    dif = (2 * abs(sin(radians(ball.ang))) + dif_2);
+    dif = (3.0 * abs(sin(radians(ball.ang))) + dif_2);
     go_ang = ball.ang + dif * ra_size *(ball.ang < 0 ? -1 : 1);
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
@@ -117,10 +133,7 @@ void loop(){
       go_ang = (go_ang.degree < 0 ? -270 : 270);
     }
 
-    if(abs(ball.ang) < 25){
-      goval += 20;
-    }
-
+    ang_old = ball.ang;
     A = 30;  //次はライン読むよ!!
   }
 
@@ -128,6 +141,7 @@ void loop(){
   if(A == 30){  //ライン読むところ
     if(Line_flag == 1){  //ラインがオンだったら
       A_line = 1;
+      timer L;
       angle linedir(line.ang,true);
       angle linedir_2(line.ang + ac.dir,true);
       linedir_2.to_range(180,true);
@@ -140,7 +154,8 @@ void loop(){
 
         go_ang = line.decideGoang(linedir,line_flag);
         MOTOR.motor_0();
-        delay(50);
+        L.reset();
+        while(L.read_ms() < 25 && line.getLINE_Vec() == 1);
       }
       else{  //連続でライン踏んでるとき
         go_ang = line.decideGoang(linedir,line_flag);
@@ -207,6 +222,7 @@ void loop(){
   }
 
   goDir = go_ang.degree;
+  V = ra_size;
 }
 
 
@@ -259,11 +275,11 @@ void OLED_moving(){
   OLED.display.println(line_flag);    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,50); //6列目
-  OLED.display.println("LF2");  //この中に変数名を入力
+  OLED.display.println("dif");  //この中に変数名を入力
   OLED.display.setCursor(30,50);
   OLED.display.println(":");
   OLED.display.setCursor(36,50);
-  OLED.display.println(line_flag_2);    //この中に知りたい変数を入力
+  OLED.display.println(B_D.returnAve());    //この中に知りたい変数を入力
 }
 
 
@@ -277,7 +293,7 @@ float AC_ch(){
     cam_A = 1;
     if(cam_B != cam_A){
       cam_B = cam_A;
-      if(abs(ball.ang) < 20){
+      if(abs(ball.ang) < 10){
         AC_A = 1;
       }
     }
@@ -300,10 +316,6 @@ float AC_ch(){
       cam_T.reset();
     }
     AC_val = ac.getCam_val(cam.X);
-    while(cam.getCamdata() == 1 && cam_T.read_ms() < 100){
-      AC_val = ac.getCam_val(cam.X);
-      MOTOR.motor_ac(AC_val);
-    }
   }
   else{
     if(AC_A != AC_B){

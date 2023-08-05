@@ -39,8 +39,8 @@ private:
   const float kd = 0.12; //微分制御の係数
   const float time = 100 / 3;
 
-  const float kp_c = kp / 4;
-  const float kd_c = kd / 4;
+  const float kp_c = 0.6;
+  const float kd_c = 0.06;
 
   sensors_event_t event;  //ジャイロのいろんな値入れるやつ
   Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
