@@ -53,8 +53,11 @@ int cam_flag = 0;
 int cam_A = 0;
 int cam_B = 999;
 int AC_A = 0;
-int AC_B = 999;
+int AC_B = 0;
+int C_flag = 0;
+
 timer cam_T;
+timer cam_T2;
 
 BALL ball;  //ボールのオブジクトだよ(基本的にボールの位置取得は全部ここ)
 AC ac;      //姿勢制御のオブジェクトだよ(基本的に姿勢制御は全部ここ)
@@ -128,7 +131,9 @@ void loop(){
     go_ang = ball.ang + dif * ra_size *(ball.ang < 0 ? -1 : 1);
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
-    
+    if(AC_A == 1){
+      go_ang = 0.08 * ball.ang*ball.ang * (ball.ang < 0 ? -1 : 1);
+    }
     if(270 < abs(go_ang.degree)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
       go_ang = (go_ang.degree < 0 ? -270 : 270);
     }
@@ -227,6 +232,69 @@ void loop(){
 
 
 /*----------------------------------------------------------------いろいろ関数-----------------------------------------------------------*/
+float AC_ch(){
+  float AC_val = 0;
+  AC_A = 0;
+  cam_flag = cam.getCamdata();
+  if(cam_flag == 1){
+    cam_A = 1;
+    if(cam_B != cam_A){
+      cam_B = cam_A;
+      if(abs(ball.ang) < 10){
+        AC_A = 1;
+      }
+    }
+    else{
+      if(abs(ball.ang) < 45){
+        AC_A = 1;
+      }
+    }
+  }
+  else{
+    cam_A = 0;
+    if(cam_A != cam_B){
+      cam_B = cam_A;
+    }
+  }
+
+  if(AC_A == 0){
+    if(AC_A != AC_B){
+      AC_B = AC_A;
+      cam_T.reset();
+    }
+    if(cam_T.read_ms() < 100){
+      AC_A = 1;
+    }
+    AC_val = ac.getAC_val();
+  }
+  if(AC_A == 1){
+    if(AC_A != AC_B){
+      AC_B = AC_A;
+      cam_T.reset();
+    }
+    if(200 < cam_T.read_ms()){
+      if(abs(ball.ang) < 10 && C_flag == 0){
+        C_flag = 1;
+      }
+    }
+    AC_val = ac.getCam_val(cam.X);
+  }
+
+  if(C_flag == 1){
+    cam_T2.reset();
+    while(cam_T2.read_ms() < 50 && cam.getCamdata() == 1){
+      MOTOR.motor_ac(ac.getCam_val(cam.X));
+    }
+    C_flag = 2;
+  }
+  if(C_flag == 2){
+    if(30 < abs(ball.ang)){
+      C_flag = 0;
+    }
+  }
+  return AC_val;
+}
+
 
 
 
@@ -280,50 +348,6 @@ void OLED_moving(){
   OLED.display.println(":");
   OLED.display.setCursor(36,50);
   OLED.display.println(B_D.returnAve());    //この中に知りたい変数を入力
-}
-
-
-
-
-float AC_ch(){
-  float AC_val = 0;
-  AC_A = 0;
-  cam_flag = cam.getCamdata();
-  if(cam_flag == 1){
-    cam_A = 1;
-    if(cam_B != cam_A){
-      cam_B = cam_A;
-      if(abs(ball.ang) < 10){
-        AC_A = 1;
-      }
-    }
-    else{
-      if(abs(ball.ang) < 45){
-        AC_A = 1;
-      }
-    }
-  }
-  else{
-    cam_A = 1;
-    if(cam_A != cam_B){
-      cam_B = cam_A;
-    }
-  }
-
-  if(AC_A == 1){
-    if(AC_A != AC_B){
-      AC_B = AC_A;
-      cam_T.reset();
-    }
-    AC_val = ac.getCam_val(cam.X);
-  }
-  else{
-    if(AC_A != AC_B){
-      AC_B = AC_A;
-    }
-    AC_val = ac.getAC_val();
-  }
-  return AC_val;
 }
 
 

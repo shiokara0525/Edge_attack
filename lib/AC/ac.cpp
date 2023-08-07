@@ -6,7 +6,6 @@ double AC::getAC_val(){  //姿勢制御の値返す関数
   dir = getnowdir();
 
   kkp = -dir;  //比例制御の値を計算
-  Time = ac_timer.read_ms();
   kkd = ((kkp - kkp_old) * time) * kd;  //微分制御の値を計算
   kkp_old = kkp;  //前Fの方向を更新
   kkp *= kp;
@@ -24,12 +23,13 @@ double AC::getAC_val(){  //姿勢制御の値返す関数
 
 float AC::getCam_val(float cam){
   this->getnowdir();
-  kkp = (150 - cam) * kp_c;  
-  kkd = ((kkp - kkp_old) * time) * kd_c;  //微分制御の値を計算
+  kkp = (150 - cam) * 0.3;  
+  kkd = ((kkp - kkp_old) * time) * kd;  //微分制御の値を計算
   if(100 < abs(kkd)){
     kkd = (kkd < 0 ? -100 : 100);
   }
   kkp_old = kkp;
+  kkp *= kp;
   dir = getnowdir();
 
   val = kkp + kkd;

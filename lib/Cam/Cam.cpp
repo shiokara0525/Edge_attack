@@ -4,8 +4,6 @@
 
 Cam::Cam(){
     pixy.init();
-    cx.setLenth(4);
-    cx.reset();
 }
 
 
@@ -18,7 +16,6 @@ int Cam::getCamdata(){
         A = 1;
         if(B != A){
             B = A;
-            cx.reset();
         }
         for(int i = 0; i < pixy.ccc.numBlocks; i++){
             if(pixy.ccc.blocks[i].m_signature == color){
@@ -29,7 +26,7 @@ int Cam::getCamdata(){
                 }
             }
         }
-        X = cx.demandAve(x);
+        X = x;
         Size = size;
         on = 1;
         if(num == 999){

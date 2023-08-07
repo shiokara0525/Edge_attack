@@ -10,7 +10,6 @@ class Cam{
         float ac_target = 0;
         int B = 999;
         int A = 0;
-        MA cx;
     public:
         Cam();
         int color = 2;
