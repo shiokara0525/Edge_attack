@@ -92,6 +92,7 @@ void loop(){
   float ra_size = RA;
   
   int Line_flag = 0;  //ライン踏んでるか踏んでないか
+  float cam_ang;
   int goval = GV;  //動くスピード決定
 
 
@@ -100,7 +101,7 @@ void loop(){
     Line_flag = line.getLINE_Vec();      //ライン踏んでるか踏んでないかを判定
 
     AC_val = AC_ch();
-    cam_flag = cam.getCamdata();
+    cam_ang = cam.ang + ac.dir;
     A = 20;
   }
 
@@ -132,7 +133,7 @@ void loop(){
     /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
 
     if(AC_A == 1){
-      go_ang = 0.08 * ball.ang*ball.ang * (ball.ang < 0 ? -1 : 1);
+      go_ang = 0.1 * ball.ang*ball.ang * (ball.ang < 0 ? -1 : 1);
     }
     if(270 < abs(go_ang.degree)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
       go_ang = (go_ang.degree < 0 ? -270 : 270);
@@ -193,7 +194,6 @@ void loop(){
     while(abs(ball.ang) < 45){  //前方向にボールがあるとき
       go_ang = 179.9 - ac.dir;
       ball.getBallposition();
-      cam_flag = cam.getCamdata();
       AC_val = AC_ch();
       if(Timer.read_ms() < 300){  //下がる(0.35秒)
         MOTOR.moveMotor_0(go_ang,goval,AC_val,AC_A);
@@ -216,7 +216,6 @@ void loop(){
     if(MOTOR.NoneM_flag == 1){
       OLED_moving();
     }
-    V = goval;
     A = 10;
   }
 
@@ -234,36 +233,26 @@ void loop(){
 /*----------------------------------------------------------------いろいろ関数-----------------------------------------------------------*/
 float AC_ch(){
   float AC_val = 0;
-  AC_A = 0;
-  cam_flag = cam.getCamdata();
-  if(cam_flag == 1){
-    cam_A = 1;
-    if(cam_B != cam_A){
-      cam_B = cam_A;
-      if(abs(ball.ang) < 10){
-        AC_A = 1;
-      }
+  cam_flag = cam.getCamdata(ac.dir);
+  if(cam_flag == 1 && (abs(cam.ang) < 30 && cam.Size < 100)){
+    if(abs(ball.ang) < 25){
+      AC_A = 1;
+    }
+    else if(abs(ball.ang) < 45 && AC_A == 1){
+      AC_A = 1;
     }
     else{
-      if(abs(ball.ang) < 45){
-        AC_A = 1;
-      }
+      AC_A = 0;
     }
   }
-  else{
-    cam_A = 0;
-    if(cam_A != cam_B){
-      cam_B = cam_A;
-    }
+  else if(cam_flag == 0){
+    AC_A = 0;
   }
 
   if(AC_A == 0){
     if(AC_A != AC_B){
       AC_B = AC_A;
       cam_T.reset();
-    }
-    if(cam_T.read_ms() < 100){
-      AC_A = 1;
     }
     AC_val = ac.getAC_val();
   }
@@ -282,7 +271,7 @@ float AC_ch(){
 
   if(C_flag == 1){
     cam_T2.reset();
-    while(cam_T2.read_ms() < 50 && cam.getCamdata() == 1){
+    while(cam_T2.read_ms() < 100 && cam.getCamdata(ac.dir) == 1){
       MOTOR.motor_ac(ac.getCam_val(cam.X));
     }
     C_flag = 2;

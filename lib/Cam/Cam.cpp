@@ -7,7 +7,7 @@ Cam::Cam(){
 }
 
 
-int Cam::getCamdata(){
+int Cam::getCamdata(float dir){
     pixy.ccc.getBlocks();
     int size = 0;
     int x = 0;
@@ -28,6 +28,7 @@ int Cam::getCamdata(){
         }
         X = x;
         Size = size;
+        ang = (X - 150) * 0.3 - dir;
         on = 1;
         if(num == 999){
             on = 0;

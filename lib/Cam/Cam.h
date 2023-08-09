@@ -16,8 +16,10 @@ class Cam{
         float X;
         float ang;
         float Size;
-        int getCamdata();
+        int getCamdata(float);
         void print();
         float P = 0;
         int on = 0;
+        float x = 0;
+        float y = 0;
 };
