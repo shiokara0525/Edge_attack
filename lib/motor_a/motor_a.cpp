@@ -135,6 +135,7 @@ void motor_attack::motor_0(){  //モーターの値を0にする関数
     analogWrite(ena[i],0);
     Motor[i].reset();
   }
+  OLED_moving();
   if(NoneM_flag == 1){
     OLED_moving();
   }
