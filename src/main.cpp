@@ -1,5 +1,4 @@
 #include<Arduino.h>
-#include<Wire.h>
 #include<ac.h>
 #include<ball.h>
 #include<line.h>
@@ -8,10 +7,6 @@
 #include<MA.h>
 #include<motor_a.h>
 #include<US.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-#include <EEPROM.h>
-#include <Encoder.h>
 #include<Cam.h>
 #include<OLED_a.h>
 
@@ -22,9 +17,9 @@
 const int Tact_Switch = 15;  //スイッチのピン番号 
 const int Toggle_Switch = 14;  //スイッチのピン番号
 int GV = 150;
-int V;
 int RA = 0;
 float goDir;
+float RA_size;
 
 void OLED_moving();
 /*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
@@ -42,9 +37,10 @@ int line_flag_2 = 0;
 //ボールの変数
 const int ball_catch = A14;
 int ball_catch_flag = 0;
+int BC;
 int get_BC();  //ボール補足センサが反応してるか判定する関数
-float dif;
-float dif_2;
+int ang_180 = 210;
+int ang_30 = 80;
 
 //カメラの変数
 int cam_flag = 0;
@@ -83,15 +79,15 @@ void setup(){
 void loop(){
   double AC_val = 100;  //姿勢制御の最終的な値を入れるグローバル変数
   angle go_ang(0,true);
-  float ra_size = RA;
-  int Line_flag = 0;  //ライン踏んでるか踏んでないか
+  float ang_90 = RA;
   int goval = GV;  //動くスピード決定
+  int Line_flag = 0;
 
 
   if(A == 10){  //情報入手
     ball.getBallposition();              //ボールの位置取得
     Line_flag = line.getLINE_Vec();      //ライン踏んでるか踏んでないかを判定
-    ball_catch_flag = get_BC() ;         //ボール補足センサが反応してるか判定
+    ball_catch_flag = get_BC();         //ボール補足センサが反応してるか判定
     AC_val = AC_ch();                    //姿勢制御の値設定
     A = 20;
   }
@@ -99,13 +95,17 @@ void loop(){
 
 
   if(A == 20){  //進む角度決めるとこ
-    go_ang = degrees(radians(ball.ang) + ra_size * sin(radians(ball.ang)));
-
-    if(AC_F == 1){  //回り込みするとき一瞬ボールから遠ざかることで安定してボールをとらえるよ
-      go_ang = 0.10 * ball.ang*ball.ang * (ball.ang < 0 ? -1 : 1);
+    if(abs(ball.ang) < 30){
+      go_ang = ang_30 / 30 * ball.ang;
+    }
+    else if(abs(ball.ang) < 90){
+      go_ang = ((ang_90 - ang_30) / 60 * (abs(ball.ang) - 30) + ang_30) * ball.ang / abs(ball.ang);
+    }
+    else{
+      go_ang = ((ang_180 - ang_90) / 90 * (abs(ball.ang) - 90) + ang_90) * ball.ang / abs(ball.ang);
     }
 
-    if(ball_catch_flag == 1){  //ボールを捉えているときは前進するよ
+    if(ball_catch_flag == 1 || abs(ball.ang) < 10 ){  //ボールを捉えているときは前進するよ
       go_ang = 0;
     }
 
@@ -186,10 +186,12 @@ void loop(){
     MOTOR.motor_0();
     OLED.toogle = digitalRead(Toggle_Switch);
     OLED.OLED();
+    GV = OLED.val_max;
+    RA = OLED.RA_size;
   }
 
   goDir = go_ang.degree;
-  V = AC_val;
+  RA_size = ang_90;
 }
 
 
@@ -209,7 +211,7 @@ float AC_ch(){
       }
     }
     else if(AC_B == 0){
-      if(abs(ball.ang) < 10 && abs(ball_.degree) < 60){
+      if(abs(ball.ang) < 20 && abs(ball_.degree) < 60){
         AC_A = 1;
       }
     }
@@ -226,7 +228,7 @@ float AC_ch(){
       cam_T2.reset();
       AC_B = AC_A;
     }
-    if(cam_T2.read_ms() < 200){
+    if(cam_T2.read_ms() < 500){
       AC_F = 1;
     }
     AC_val = ac.getCam_val(cam.ang);
@@ -253,11 +255,11 @@ void OLED_moving(){
   OLED.display.println(goDir);    //現在向いてる角度を表示
 
   OLED.display.setCursor(0,10);  //2列目
-  OLED.display.println("CF");  //この中に変数名を入力
+  OLED.display.println("Bang");  //この中に変数名を入力
   OLED.display.setCursor(30,10);
   OLED.display.println(":");
   OLED.display.setCursor(36,10);
-  OLED.display.println(cam.on);    //この中に知りたい変数を入力a
+  OLED.display.println(ball.ang);    //この中に知りたい変数を入力a
 
   OLED.display.setCursor(0,20); //3列目
   OLED.display.println("CA");  //この中に変数名を入力
@@ -267,18 +269,18 @@ void OLED_moving(){
   OLED.display.println(cam.ang);    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,30); //4列目
-  OLED.display.println("AC_A");  //この中に変数名を入力
+  OLED.display.println("RA");  //この中に変数名を入力
   OLED.display.setCursor(30,30);
   OLED.display.println(":");
   OLED.display.setCursor(36,30);
-  OLED.display.println(AC_A);    //この中に知りたい変数を入力
+  OLED.display.println(RA_size);    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,40); //5列目
-  OLED.display.println("AC_F");  //この中に変数名を入力
+  OLED.display.println("");  //この中に変数名を入力
   OLED.display.setCursor(30,40);
   OLED.display.println(":");
   OLED.display.setCursor(36,40);
-  OLED.display.println(AC_F);    //この中に知りたい変数を入力
+  OLED.display.println();    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,50); //6列目
   OLED.display.println("");  //この中に変数名を入力
@@ -291,7 +293,8 @@ void OLED_moving(){
 
 
 int get_BC(){
-  if(digitalRead(ball_catch) < 800){
+  BC = analogRead(ball_catch);
+  if(BC < 800){
     return 1;
   }
   else{
