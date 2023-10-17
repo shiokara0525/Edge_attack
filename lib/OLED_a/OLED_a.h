@@ -11,6 +11,7 @@
 #include<ac.h>
 #include<Cam.h>
 #include<motor_a.h>
+#include<Arduino.h>
 
 extern AC ac;
 extern Cam cam;

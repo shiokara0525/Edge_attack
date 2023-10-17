@@ -255,11 +255,11 @@ void OLED_moving(){
   OLED.display.println(goDir);    //現在向いてる角度を表示
 
   OLED.display.setCursor(0,10);  //2列目
-  OLED.display.println("Bang");  //この中に変数名を入力
+  OLED.display.println("C_on");  //この中に変数名を入力
   OLED.display.setCursor(30,10);
   OLED.display.println(":");
   OLED.display.setCursor(36,10);
-  OLED.display.println(ball.ang);    //この中に知りたい変数を入力a
+  OLED.display.println(cam.on);    //この中に知りたい変数を入力a
 
   OLED.display.setCursor(0,20); //3列目
   OLED.display.println("CA");  //この中に変数名を入力
