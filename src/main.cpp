@@ -37,6 +37,9 @@ int line_flag_2 = 0;
 //ボールの変数
 const int ball_catch = A14;
 int ball_catch_flag = 0;
+timer BC_;
+int BC_A = 0;
+int BC_B = 999;
 int BC;
 int get_BC();  //ボール補足センサが反応してるか判定する関数
 int ang_180 = 210;
@@ -95,18 +98,40 @@ void loop(){
 
 
   if(A == 20){  //進む角度決めるとこ
+    int ang_30_ = ang_30;
+    if(AC_F == 1){
+      ang_30_ = 180;
+    }
     if(abs(ball.ang) < 30){
-      go_ang = ang_30 / 30 * ball.ang;
+      go_ang = ang_30_ / 30 * ball.ang;
     }
     else if(abs(ball.ang) < 90){
-      go_ang = ((ang_90 - ang_30) / 60 * (abs(ball.ang) - 30) + ang_30) * ball.ang / abs(ball.ang);
+      go_ang = ((ang_90 - ang_30_) / 60 * (abs(ball.ang) - 30) + ang_30_) * ball.ang / abs(ball.ang);
     }
     else{
       go_ang = ((ang_180 - ang_90) / 90 * (abs(ball.ang) - 90) + ang_90) * ball.ang / abs(ball.ang);
     }
 
-    if(ball_catch_flag == 1 || abs(ball.ang) < 10 ){  //ボールを捉えているときは前進するよ
+    if(abs(ball.ang) < 20){
+      BC_A = 1;
+      if(BC_A != BC_B){
+        BC_B = BC_A;
+        BC_.reset();
+      }
+      if(100 < BC_.read_ms() && AC_F == 0 && abs(ac.dir) < 10){
+        go_ang = 0;
+      }
+    }
+    else{
+      BC_A = 0,BC_B = 0;
+    }
+
+    if((ball_catch_flag == 1 || abs(ball.ang) < 10 ) && AC_F == 0){  //ボールを捉えているときは前進するよ
       go_ang = 0;
+    }
+
+    if(AC_F == 1){
+      goval = 70;
     }
 
     A = 30;  //次はライン読むよ!!
@@ -197,42 +222,43 @@ void loop(){
 
 /*----------------------------------------------------------------いろいろ関数-----------------------------------------------------------*/
 float AC_ch(){
-  float AC_val = 0;
-  angle ball_(ball.ang + ac.dir,true);
-  ball_.to_range(180,true);
-  cam_flag = cam.on;
-  AC_A = 0;
-  AC_F = 0;
+  // float AC_val = 0;
+  // angle ball_(ball.ang + ac.dir,true);
+  // ball_.to_range(180,true);
+  // cam_flag = cam.on;
+  // AC_A = 0;
+  // AC_F = 0;
 
-  if(cam_flag == 1){
-    if(AC_B == 1){
-      if(abs(ball.ang) < 50 && abs(ball_.degree) < 60){
-        AC_A = 1;
-      }
-    }
-    else if(AC_B == 0){
-      if(abs(ball.ang) < 20 && abs(ball_.degree) < 60){
-        AC_A = 1;
-      }
-    }
-  }
+  // if(cam_flag == 1){
+  //   if(AC_B == 1){
+  //     if(abs(ball.ang) < 50 && abs(ball_.degree) < 60){
+  //       AC_A = 1;
+  //     }
+  //   }
+  //   else if(AC_B == 0){
+  //     if(abs(ball.ang) < 20 && abs(ball_.degree) < 60){
+  //       AC_A = 1;
+  //     }
+  //   }
+  // }
 
-  if(AC_A == 0){
-    if(AC_A != AC_B){
-      AC_B = AC_A;
-    }
-    AC_val = ac.getAC_val();
-  }
-  else if(AC_A == 1){
-    if(AC_A != AC_B){
-      cam_T2.reset();
-      AC_B = AC_A;
-    }
-    if(cam_T2.read_ms() < 500){
-      AC_F = 1;
-    }
-    AC_val = ac.getCam_val(cam.ang);
-  }
+  // if(AC_A == 0){
+  //   if(AC_A != AC_B){
+  //     AC_B = AC_A;
+  //   }
+  //   AC_val = ac.getAC_val();
+  // }
+  // else if(AC_A == 1){
+  //   if(AC_A != AC_B){
+  //     cam_T2.reset();
+  //     AC_B = AC_A;
+  //   }
+  //   if(cam_T2.read_ms() < 250){
+  //     AC_F = 1;
+  //   }
+  //   AC_val = ac.getCam_val(cam.ang);
+  // }
+  float AC_val = ac.getAC_val();
   return AC_val;
 }
 
@@ -305,14 +331,22 @@ int get_BC(){
 
 
 void serialEvent1(){
-  int a = Serial1.read();
-  if(100 < a){
-    cam.on = 0;
-    cam.ang = 0;
+  uint8_t reBuf[4];
+  if(4 < Serial1.available()){
+    for(int i = 0; i < 4; i++){
+      reBuf[i] = Serial1.read();
+    }
   }
-  else{
-    cam.on = 1;
-    cam.ang = a - 30;
+
+  if(reBuf[0] == 38 && reBuf[3] == 37){
+    if(reBuf[2] == 0){
+      cam.on = 0;
+    }
+    else{
+      cam.on = 1;
+      cam.Size = reBuf[2];
+      cam.ang = reBuf[1] - 30;
+    }
   }
 }
 
