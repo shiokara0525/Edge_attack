@@ -1,5 +1,4 @@
 #include<Cam.h>
-#include<ac.h>
 
 
 Cam::Cam(){

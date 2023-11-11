@@ -1,6 +1,5 @@
 #pragma once
 
-#include<Pixy2UART.h>
 #include<timer.h>
 #include<MA.h>
 

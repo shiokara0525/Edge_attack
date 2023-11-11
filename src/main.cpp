@@ -126,7 +126,7 @@ void loop(){
       BC_A = 0,BC_B = 0;
     }
 
-    if((ball_catch_flag == 1 || abs(ball.ang) < 10 ) && AC_F == 0){  //ボールを捉えているときは前進するよ
+    if((ball_catch_flag == 1 || abs(ball.ang) < 6 ) && AC_F == 0){  //ボールを捉えているときは前進するよ
       go_ang = 0;
     }
 
@@ -222,43 +222,42 @@ void loop(){
 
 /*----------------------------------------------------------------いろいろ関数-----------------------------------------------------------*/
 float AC_ch(){
-  // float AC_val = 0;
-  // angle ball_(ball.ang + ac.dir,true);
-  // ball_.to_range(180,true);
-  // cam_flag = cam.on;
-  // AC_A = 0;
-  // AC_F = 0;
+  float AC_val = 0;
+  angle ball_(ball.ang + ac.dir,true);
+  ball_.to_range(180,true);
+  cam_flag = cam.on;
+  AC_A = 0;
+  AC_F = 0;
 
-  // if(cam_flag == 1){
-  //   if(AC_B == 1){
-  //     if(abs(ball.ang) < 50 && abs(ball_.degree) < 60){
-  //       AC_A = 1;
-  //     }
-  //   }
-  //   else if(AC_B == 0){
-  //     if(abs(ball.ang) < 20 && abs(ball_.degree) < 60){
-  //       AC_A = 1;
-  //     }
-  //   }
-  // }
+  if(cam_flag == 1){
+    if(AC_B == 1){
+      if(abs(ball.ang) < 50 && abs(ball_.degree) < 60){
+        AC_A = 1;
+      }
+    }
+    else if(AC_B == 0){
+      if(abs(ball.ang) < 20 && abs(ball_.degree) < 60){
+        AC_A = 1;
+      }
+    }
+  }
 
-  // if(AC_A == 0){
-  //   if(AC_A != AC_B){
-  //     AC_B = AC_A;
-  //   }
-  //   AC_val = ac.getAC_val();
-  // }
-  // else if(AC_A == 1){
-  //   if(AC_A != AC_B){
-  //     cam_T2.reset();
-  //     AC_B = AC_A;
-  //   }
-  //   if(cam_T2.read_ms() < 250){
-  //     AC_F = 1;
-  //   }
-  //   AC_val = ac.getCam_val(cam.ang);
-  // }
-  float AC_val = ac.getAC_val();
+  if(AC_A == 0){
+    if(AC_A != AC_B){
+      AC_B = AC_A;
+    }
+    AC_val = ac.getAC_val();
+  }
+  else if(AC_A == 1){
+    if(AC_A != AC_B){
+      cam_T2.reset();
+      AC_B = AC_A;
+    }
+    if(cam_T2.read_ms() < 250){
+      AC_F = 1;
+    }
+    AC_val = ac.getCam_val(cam.ang);
+  }
   return AC_val;
 }
 
@@ -295,11 +294,11 @@ void OLED_moving(){
   OLED.display.println(cam.ang);    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,30); //4列目
-  OLED.display.println("RA");  //この中に変数名を入力
+  OLED.display.println("L_f");  //この中に変数名を入力
   OLED.display.setCursor(30,30);
   OLED.display.println(":");
   OLED.display.setCursor(36,30);
-  OLED.display.println(RA_size);    //この中に知りたい変数を入力
+  OLED.display.println(line.LINE_on);    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,40); //5列目
   OLED.display.println("");  //この中に変数名を入力
@@ -348,6 +347,7 @@ void serialEvent1(){
       cam.ang = reBuf[1] - 30;
     }
   }
+  Serial.println("sawa");
 }
 
 
