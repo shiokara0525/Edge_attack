@@ -112,7 +112,7 @@ void loop(){
       go_ang = ((ang_180 - ang_90) / 90 * (abs(ball.ang) - 90) + ang_90) * ball.ang / abs(ball.ang);
     }
 
-    if(abs(ball.ang) < 20){
+    if(abs(ball.ang) < 10){
       BC_A = 1;
       if(BC_A != BC_B){
         BC_B = BC_A;
@@ -301,11 +301,11 @@ void OLED_moving(){
   OLED.display.println(line.LINE_on);    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,40); //5列目
-  OLED.display.println("");  //この中に変数名を入力
+  OLED.display.println("B_A");  //この中に変数名を入力
   OLED.display.setCursor(30,40);
   OLED.display.println(":");
   OLED.display.setCursor(36,40);
-  OLED.display.println();    //この中に知りたい変数を入力
+  OLED.display.println(ball.ang);    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,50); //6列目
   OLED.display.println("");  //この中に変数名を入力

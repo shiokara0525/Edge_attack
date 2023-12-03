@@ -24,7 +24,7 @@ void motor_attack::moveMotor_L(angle ang,int val,double ac_val,LINE line){  //�
   max_val -= ac_val;  //姿勢制御とその他のモーターの値を別に考えるために姿勢制御の値を引いておく
   
   for(int i = 0; i < 4; i++){
-    Mval[i] = -mSin[i] *(mval_x + line.Lvec_X * line_val)  + mCos[i] *(mval_y + line.Lvec_Y * line_val);
+    Mval[i] = -mSin[i] *(mval_x + line.dis_X * line_val)  + mCos[i] *(mval_y + line.dis_Y * line_val);
 
     if(abs(Mval[i]) > g){  //絶対値が一番高い値だったら
       g = abs(Mval[i]);    //一番大きい値を代入
@@ -135,7 +135,6 @@ void motor_attack::motor_0(){  //モーターの値を0にする関数
     analogWrite(ena[i],0);
     Motor[i].reset();
   }
-  OLED_moving();
   if(NoneM_flag == 1){
     OLED_moving();
   }
@@ -144,7 +143,7 @@ void motor_attack::motor_0(){  //モーターの値を0にする関数
 
 
 float motor_attack::Moutput(int i,float Mval){
-  if(i == 1 || i == 3){
+  if(i == 1 || i == 2){
     if(0 < Mval){            //モーターの回転方向が正の時
       digitalWrite(pah[i] , LOW);    //モーターの回転方向を正にする
     }
