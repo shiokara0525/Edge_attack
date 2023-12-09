@@ -143,7 +143,7 @@ void motor_attack::motor_0(){  //モーターの値を0にする関数
 
 
 float motor_attack::Moutput(int i,float Mval){
-  if(i == 1 || i == 2){
+  if(i == 2){
     if(0 < Mval){            //モーターの回転方向が正の時
       digitalWrite(pah[i] , LOW);    //モーターの回転方向を正にする
     }
