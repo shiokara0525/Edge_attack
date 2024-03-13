@@ -2,5 +2,6 @@
     "files.associations": {
         "cmath": "cpp",
         "limits": "cpp"
-    }
+    },
+    "cmake.configureOnOpen": false
 }
