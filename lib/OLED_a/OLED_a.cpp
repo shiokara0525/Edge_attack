@@ -478,11 +478,13 @@ void oled_attack::OLED() {
           if(Button_selectCF == 0)  //yellowが選択されていたら
           {
             cam.color = 1;
-             A_OLED = 15;  //スタート画面に行く
+            Serial1.write("1");
+            A_OLED = 15;  //スタート画面に行く
           }
           else if(Button_selectCF == 2)  //blueが選択されていたら
           {
             cam.color = 2;
+            Serial1.write("0");
             A_OLED = 15;  //スタート画面に行く
           }
           else if(Button_selectCF == 1)  //exitが選択されていたら

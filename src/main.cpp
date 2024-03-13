@@ -1,5 +1,4 @@
 #include<Arduino.h>
-#include<Wire.h>
 #include<ac.h>
 #include<ball.h>
 #include<line.h>
@@ -8,23 +7,19 @@
 #include<MA.h>
 #include<motor_a.h>
 #include<US.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-#include <EEPROM.h>
-#include <Encoder.h>
 #include<Cam.h>
 #include<OLED_a.h>
 
 
 #define pi 3.1415926535897932384
+#define pi_ 1 / pi 
 /*--------------------------------------------------------OLED----------------------------------------------------------------------*/
 const int Tact_Switch = 15;  //スイッチのピン番号 
 const int Toggle_Switch = 14;  //スイッチのピン番号
 int GV = 150;
-int V;
 int RA = 0;
 float goDir;
-int BF_flag = 0;
+float RA_size;
 
 void OLED_moving();
 /*--------------------------------------------------------いろいろ変数----------------------------------------------------------------------*/
@@ -38,25 +33,24 @@ int B_line = 999;  //前回踏んでるか踏んでないか
 int line_flag = 0;    //最初にどんな風にラインの判定したか記録
 int line_flag_2 = 0;
 
-float AC_ch();
+
 //ボールの変数
 const int ball_catch = A14;
 int ball_catch_flag = 0;
-float dif;
-float dif_2;
-float ang_old = 0;
-float b_d;
-MA B_D;
+timer BC_;
+int BC_A = 0;
+int BC_B = 999;
+int BC;
+int get_BC();  //ボール補足センサが反応してるか判定する関数
+int ang_180 = 210;
+int ang_30 = 80;
 
 //カメラの変数
 int cam_flag = 0;
-int cam_A = 0;
-int cam_B = 999;
 int AC_A = 0;
 int AC_B = 0;
-int C_flag = 0;
+int AC_F = 0;
 
-timer cam_T;
 timer cam_T2;
 
 BALL ball;  //ボールのオブジクトだよ(基本的にボールの位置取得は全部ここ)
@@ -65,7 +59,7 @@ LINE line;  //ラインのオブジェクトだよ(基本的にラインの判�
 motor_attack MOTOR;
 Cam cam;
 oled_attack OLED;
-timer Timer;
+float AC_ch();
 
 /*------------------------------------------------------実際に動くやつら-------------------------------------------------------------------*/
 
@@ -73,11 +67,10 @@ timer Timer;
 void setup(){
   Serial.begin(9600);  //シリアルプリントできるよ
   Serial8.begin(57600);
+  pinMode(ball_catch,INPUT);
   ac.setup();
   line.setup();
   OLED.OLED();
-  B_D.setLenth(10);
-  B_D.reset();
   GV = OLED.val_max;
   RA = OLED.RA_size;
   A = 10;
@@ -89,57 +82,64 @@ void setup(){
 void loop(){
   double AC_val = 100;  //姿勢制御の最終的な値を入れるグローバル変数
   angle go_ang(0,true);
-  float ra_size = RA;
-  
-  int Line_flag = 0;  //ライン踏んでるか踏んでないか
+  float ang_90 = RA;
   int goval = GV;  //動くスピード決定
+  int Line_flag = 0;
 
 
   if(A == 10){  //情報入手
-    ball.getBallposition();  //ボールの位置取得
+    ball.getBallposition();              //ボールの位置取得
     Line_flag = line.getLINE_Vec();      //ライン踏んでるか踏んでないかを判定
-
-    AC_val = AC_ch();
+    ball_catch_flag = get_BC();         //ボール補足センサが反応してるか判定
+    AC_val = AC_ch();                    //姿勢制御の値設定
     A = 20;
   }
 
 
-  if(A == 15){
-    while(1){
-      MOTOR.motor_0();
-      ball.getBallposition();
-    }
-    A = 30;
-  }
-
 
   if(A == 20){  //進む角度決めるとこ
-    if(30 < abs(ball.ang) && B_D.demandAve(abs(ball.ang - ang_old)) < 4.0){
-      ra_size += 3.0;
+    int ang_30_ = ang_30;
+    if(AC_F == 1){
+      ang_30_ = 180;
     }
-    else if(AC_A == 1 && 30 < cam.Size){
-      goval -= 15;
-      ra_size += 5.0;
+    if(abs(ball.ang) < 30){
+      go_ang = ang_30_ / 30 * ball.ang;
     }
-    /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
-    dif_2 = abs(ball.ang) * 0.003;
-    dif = (3.0 * abs(sin(radians(ball.ang))) + 1.3 * dif_2);
-    go_ang = ball.ang + dif * ra_size *(ball.ang < 0 ? -1 : 1);
-    /*-----------------------------------------------------!!!!!!!!!重要!!!!!!!!----------------------------------------------------------*/
-
-    if(AC_A == 1 && 30 < cam.Size){
-      go_ang = 0.1 * ball.ang*ball.ang * (ball.ang < 0 ? -1 : 1);
+    else if(abs(ball.ang) < 90){
+      go_ang = ((ang_90 - ang_30_) / 60 * (abs(ball.ang) - 30) + ang_30_) * ball.ang / abs(ball.ang);
     }
-    if(270 < abs(go_ang.degree)){  //回り込みの差分が大きすぎて逆に前に進むことを防ぐよ
-      go_ang = (go_ang.degree < 0 ? -270 : 270);
+    else{
+      go_ang = ((ang_180 - ang_90) / 90 * (abs(ball.ang) - 90) + ang_90) * ball.ang / abs(ball.ang);
     }
 
-    ang_old = ball.ang;
+    if(abs(ball.ang) < 10){
+      BC_A = 1;
+      if(BC_A != BC_B){
+        BC_B = BC_A;
+        BC_.reset();
+      }
+      if(100 < BC_.read_ms() && AC_F == 0 && abs(ac.dir) < 10){
+        go_ang = 0;
+      }
+    }
+    else{
+      BC_A = 0,BC_B = 0;
+    }
+
+    if((ball_catch_flag == 1 || abs(ball.ang) < 6 ) && AC_F == 0){  //ボールを捉えているときは前進するよ
+      go_ang = 0;
+    }
+
+    if(AC_F == 1){
+      goval = 70;
+    }
+
     A = 30;  //次はライン読むよ!!
   }
 
 
   if(A == 30){  //ライン読むところ
+    A = 40;
     if(Line_flag == 1){  //ラインがオンだったら
       A_line = 1;
       timer L;
@@ -162,22 +162,17 @@ void loop(){
         go_ang = line.decideGoang(linedir,line_flag);
       }
 
-      if((40 < abs(ac.dir) || 3 <= line.num || cam.on == 0) && line_flag_2 == 1){
-        A = 35;
-      }
-      else{
-        A = 40;
-      }
-
     }
     else if(Line_flag == 0){  //ラインを踏んでなかったら
       A_line = 0;
       if(A_line != B_line){  //前回までライン踏んでたら
-        B_line = A_line;  //今回はライン踏んでないよ
+        B_line = A_line;     //今回はライン踏んでないよ
+        if((line_flag_2 == 1  || line_flag == 1)&& cam_flag == 0){
+          A = 35;
+        }
       }
       line_flag = 0;
       line_flag_2 = 0;
-      A = 40;
     }
   }
 
@@ -216,68 +211,55 @@ void loop(){
     MOTOR.motor_0();
     OLED.toogle = digitalRead(Toggle_Switch);
     OLED.OLED();
+    GV = OLED.val_max;
+    RA = OLED.RA_size;
   }
 
   goDir = go_ang.degree;
-  V = ra_size;
+  RA_size = ang_90;
 }
 
 
 /*----------------------------------------------------------------いろいろ関数-----------------------------------------------------------*/
 float AC_ch(){
   float AC_val = 0;
-  cam_flag = cam.getCamdata(ac.dir);
-  if(cam_flag == 1 && abs(cam.ang) < 50){
-    angle ball_ang(ball.ang + ac.dir,true,180,true);
-    if(abs(ball_ang.degree) < 30 || abs(ball.ang) < 30){
-      AC_A = 1;
+  angle ball_(ball.ang + ac.dir,true);
+  ball_.to_range(180,true);
+  cam_flag = cam.on;
+  AC_A = 0;
+  AC_F = 0;
+
+  if(cam_flag == 1){
+    if(AC_B == 1){
+      if(abs(ball.ang) < 50 && abs(ball_.degree) < 60){
+        AC_A = 1;
+      }
     }
-    else if((abs(ball_ang.degree) < 60 || abs(ball.ang) < 30) && AC_B == 1){
-      AC_A = 1;
+    else if(AC_B == 0){
+      if(abs(ball.ang) < 20 && abs(ball_.degree) < 60){
+        AC_A = 1;
+      }
     }
-    else{
-      AC_A = 0;
-    }
-  }
-  else if(cam_flag == 0){
-    AC_A = 0;
   }
 
   if(AC_A == 0){
     if(AC_A != AC_B){
       AC_B = AC_A;
-      cam_T.reset();
     }
     AC_val = ac.getAC_val();
   }
-  if(AC_A == 1){
+  else if(AC_A == 1){
     if(AC_A != AC_B){
+      cam_T2.reset();
       AC_B = AC_A;
-      cam_T.reset();
     }
-    if(200 < cam_T.read_ms()){
-      if(abs(ball.ang) < 10 && C_flag == 0){
-        C_flag = 1;
-      }
+    if(cam_T2.read_ms() < 250){
+      AC_F = 1;
     }
-    AC_val = ac.getCam_val(cam.X);
-  }
-
-  if(C_flag == 1){
-    cam_T2.reset();
-    while(cam_T2.read_ms() < 100 && cam.getCamdata(ac.dir) == 1){
-      MOTOR.motor_ac(ac.getCam_val(cam.X));
-    }
-    C_flag = 2;
-  }
-  if(C_flag == 2){
-    if(30 < abs(ball.ang)){
-      C_flag = 0;
-    }
+    AC_val = ac.getCam_val(cam.ang);
   }
   return AC_val;
 }
-
 
 
 
@@ -291,48 +273,82 @@ void OLED_moving(){
   OLED.display.setTextColor(WHITE);
   
   OLED.display.setCursor(0,0);  //1列目
-  OLED.display.println("val");  //現在向いてる角度
+  OLED.display.println("goang");  //現在向いてる角度
   OLED.display.setCursor(30,0);
   OLED.display.println(":");
   OLED.display.setCursor(36,0);
-  OLED.display.println(ac.dir);    //現在向いてる角度を表示
+  OLED.display.println(goDir);    //現在向いてる角度を表示
 
   OLED.display.setCursor(0,10);  //2列目
-  OLED.display.println("Cang");  //この中に変数名を入力
+  OLED.display.println("C_on");  //この中に変数名を入力
   OLED.display.setCursor(30,10);
   OLED.display.println(":");
   OLED.display.setCursor(36,10);
-  OLED.display.println(cam.ang);    //この中に知りたい変数を入力
+  OLED.display.println(cam.on);    //この中に知りたい変数を入力a
 
   OLED.display.setCursor(0,20); //3列目
-  OLED.display.println("Cdis");  //この中に変数名を入力
+  OLED.display.println("CA");  //この中に変数名を入力
   OLED.display.setCursor(30,20);
   OLED.display.println(":");
   OLED.display.setCursor(36,20);
-  OLED.display.println(cam.Size);    //この中に知りたい変数を入力
+  OLED.display.println(cam.ang);    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,30); //4列目
-  OLED.display.println("");  //この中に変数名を入力
+  OLED.display.println("L_f");  //この中に変数名を入力
   OLED.display.setCursor(30,30);
   OLED.display.println(":");
   OLED.display.setCursor(36,30);
-  OLED.display.println();    //この中に知りたい変数を入力
+  OLED.display.println(line.LINE_on);    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,40); //5列目
-  OLED.display.println("");  //この中に変数名を入力
+  OLED.display.println("B_A");  //この中に変数名を入力
   OLED.display.setCursor(30,40);
   OLED.display.println(":");
   OLED.display.setCursor(36,40);
-  OLED.display.println();    //この中に知りたい変数を入力
+  OLED.display.println(ball.ang);    //この中に知りたい変数を入力
 
   OLED.display.setCursor(0,50); //6列目
-  OLED.display.println("A");  //この中に変数名を入力
+  OLED.display.println("");  //この中に変数名を入力
   OLED.display.setCursor(30,50);
   OLED.display.println(":");
   OLED.display.setCursor(36,50);
-  OLED.display.println(A);    //この中に知りたい変数を入力
+  OLED.display.println();    //この中に知りたい変数を入力
 }
 
+
+
+int get_BC(){
+  BC = analogRead(ball_catch);
+  if(BC < 800){
+    return 1;
+  }
+  else{
+    return 0;
+  }
+}
+
+
+
+void serialEvent1(){
+  uint8_t reBuf[4];
+  if(4 < Serial1.available()){
+    for(int i = 0; i < 4; i++){
+      reBuf[i] = Serial1.read();
+    }
+  }
+
+  if(reBuf[0] == 38 && reBuf[3] == 37){
+    if(reBuf[2] == 0){
+      cam.on = 0;
+    }
+    else{
+      cam.on = 1;
+      cam.Size = reBuf[2];
+      cam.ang = reBuf[1] - 30;
+    }
+  }
+  Serial.println("sawa");
+}
 
 
 

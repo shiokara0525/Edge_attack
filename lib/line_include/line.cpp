@@ -84,7 +84,6 @@ int LINE::getLINE_Vec() { //ラインのベクトル(距離,角度)を取得す�
     // Serial.print(data_ave[i]);
     // Serial.print(" ");    
   }
-  Serial.println();
 
 
   for(int i = 0; i < 24; i++){
